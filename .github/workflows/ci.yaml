@@ -32,9 +32,9 @@ jobs:
     - name: Run flake8
       run: flake8
     - name: Run Pylint
-      run: pylint retinaface
+      run: pylint streamselect
     - name: Run Mypy
-      run: mypy retinaface
+      run: mypy streamselect
     - name: tests
       run: |
        pip install .[tests]
