@@ -23,7 +23,11 @@ class ConceptRepresentation(Base, abc.ABC):
     @abc.abstractmethod
     def learn_one(self, x: dict, y: ClfTarget, p: typing.Union[ClfTarget, None] = None) -> None:
         """Update a concept representation with a single observation drawn from a concept,
-        classified by a given classifier."""
+        classified by a given classifier. Updates supervised meta-features, as in river."""
+
+    def predict_one(self, x: dict, p: typing.Union[ClfTarget, None] = None) -> None:
+        """Update a concept representation with a single observation drawn from a concept,
+        classified by a given classifier. Updates unsupervised meta-features, as in river."""
 
     @property
     def _vector(self) -> bool:
