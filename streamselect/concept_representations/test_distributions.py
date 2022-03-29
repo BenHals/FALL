@@ -31,16 +31,18 @@ def test_gaussian_distribution() -> None:
         mf_distribution.learn_one(val)
     output.append((mf_distribution.mean, mf_distribution.stdev))
 
-    test_against = [
-        (0.0, 0.0),
-        *[
-            (
-                np.mean(test_meta_feature_vals[:i]),
-                np.std(test_meta_feature_vals[:i], ddof=1),
-            )
-            for i in range(1, len(test_meta_feature_vals) + 1)
-        ],
-    ]
+    test_against = np.array(
+        [
+            (0.0, 0.0),
+            *[
+                (
+                    np.mean(test_meta_feature_vals[:i]),
+                    np.std(test_meta_feature_vals[:i], ddof=1),
+                )
+                for i in range(1, len(test_meta_feature_vals) + 1)
+            ],
+        ]
+    )
     # Note: we have desired behaviour that the stdev of distributions with 1 value is 0.
     test_against = np.nan_to_num(test_against)
     np.testing.assert_array_almost_equal(output, test_against, decimal=2)
