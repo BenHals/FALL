@@ -9,5 +9,6 @@ constructed states and their memory management.
 """
 
 from .base import Repository
+from .transition_fsm import TransitionFSM
 
-__all__ = ["Repository"]
+__all__ = ["TransitionFSM", "Repository"]
