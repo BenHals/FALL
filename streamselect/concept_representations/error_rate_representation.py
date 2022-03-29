@@ -10,7 +10,9 @@ from .meta_feature_distributions import SingleValueDistribution
 
 class ErrorRateRepresentation(ConceptRepresentation):
     """A concept representation which represents a concept
-    using the error rate of a given classifier over a recent window of size w."""
+    using the error rate of a given classifier over a recent window of size w.
+    With zero observations, we default to an error rate of 0.0 to represent maximum performance.
+    This is a common (implied) comparison target when testing error_rate."""
 
     def __init__(self, window_size: int):
         super().__init__()
