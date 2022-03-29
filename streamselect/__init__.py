@@ -2,6 +2,11 @@
 streamselect is a package for handling reccuring concept drift in online machine learning tasks.
 """
 
-from .package_tester import run_package
+from . import classifiers, concept_representations, repository, states
 
-__all__ = ["run_package"]
+__all__ = [
+    "classifiers",
+    "concept_representations",
+    "repository",
+    "states",
+]
