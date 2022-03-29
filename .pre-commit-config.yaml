@@ -37,6 +37,7 @@ repos:
         language: system
         types: [python]
         args:
+          - streamselect
           - --max-line-length=120
           - --ignore-imports=yes
           - -d duplicate-code
