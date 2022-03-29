@@ -8,6 +8,7 @@ from river.base.typing import ClfTarget
 from streamselect.concept_representations import (
     ConceptRepresentation,
     ErrorRateRepresentation,
+    RepresentationComparer,
 )
 
 
@@ -53,6 +54,16 @@ class State:  # pylint: disable=too-few-public-methods
         if self.train_representation:
             self.concept_representation.predict_one(x=x, p=p)
         return p
+
+    def get_similarity_to_state(self, state_b: State, comparison: RepresentationComparer) -> float:
+        """Return a similarity value between this state and another state."""
+        return self.get_similarity_to_representation(state_b.concept_representation, comparison)
+
+    def get_similarity_to_representation(
+        self, rep_b: ConceptRepresentation, comparison: RepresentationComparer
+    ) -> float:
+        """Return a similarity value between this state and a concept representation."""
+        return comparison.get_similarity(self.concept_representation, rep_b)
 
     def deactivate_train_representation(self) -> None:
         """Deactivate training representation.

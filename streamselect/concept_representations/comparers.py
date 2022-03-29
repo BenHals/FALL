@@ -5,8 +5,6 @@ from typing import List
 
 from river.base import Base
 
-from streamselect.states import State
-
 from .base import ConceptRepresentation
 
 
@@ -18,10 +16,6 @@ class RepresentationComparer(Base, abc.ABC):
     @abc.abstractmethod
     def get_similarity(self, rep_a: ConceptRepresentation, rep_b: ConceptRepresentation) -> float:
         """Teturns the similarity between concept representations."""
-
-    def get_state_similarity(self, state_a: State, state_b: State) -> float:
-        """Returns the similarity between concept representations of the given states."""
-        return self.get_similarity(state_a.concept_representation, state_b.concept_representation)
 
 
 class AbsoluteValueComparer(RepresentationComparer):
