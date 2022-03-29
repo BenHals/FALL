@@ -5,7 +5,10 @@ from river import utils
 from river.base import Classifier
 from river.base.typing import ClfTarget
 
-from streamselect.concept_representations import ConceptRepresentation
+from streamselect.concept_representations import (
+    ConceptRepresentation,
+    ErrorRateRepresentation,
+)
 
 
 class State:  # pylint: disable=too-few-public-methods
@@ -14,13 +17,15 @@ class State:  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         classifier: Classifier,
-        concept_representation: ConceptRepresentation,
+        concept_representation: ConceptRepresentation | None = None,
         state_id: int = -1,
         train_representation: bool = True,
     ) -> None:
         self.state_id = state_id
         self.classifier = classifier
-        self.concept_representation = concept_representation
+        self.concept_representation = (
+            concept_representation if concept_representation else ErrorRateRepresentation(window_size=1)
+        )
         self.train_representation = train_representation
 
     def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> State:

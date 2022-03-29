@@ -1,4 +1,4 @@
-from typing import Union
+from typing import List, Union
 
 from river.base.typing import ClfTarget
 from river.stats import RollingMean
@@ -25,3 +25,9 @@ class ErrorRateRepresentation(ConceptRepresentation):
         avg_error_rate = self.recent_error_rate.get()
         self.values[0] = avg_error_rate
         self.distribution[0].learn_one(avg_error_rate)
+
+    def predict_one(self, x: dict, p: Union[ClfTarget, None] = None) -> None:
+        pass
+
+    def get_values(self) -> List:
+        return self.values

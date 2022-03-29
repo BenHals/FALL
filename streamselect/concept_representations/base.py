@@ -1,8 +1,7 @@
 """ Abstract base concept representation and comparison. """
 
 import abc
-import typing
-from typing import List
+from typing import List, Union
 
 from river.base import Base
 from river.base.typing import ClfTarget
@@ -21,13 +20,19 @@ class ConceptRepresentation(Base, abc.ABC):
         self.distribution: List[BaseDistribution] = []
 
     @abc.abstractmethod
-    def learn_one(self, x: dict, y: ClfTarget, p: typing.Union[ClfTarget, None] = None) -> None:
+    def learn_one(self, x: dict, y: ClfTarget, p: Union[ClfTarget, None] = None) -> None:
         """Update a concept representation with a single observation drawn from a concept,
         classified by a given classifier. Updates supervised meta-features, as in river."""
 
-    def predict_one(self, x: dict, p: typing.Union[ClfTarget, None] = None) -> None:
+    @abc.abstractmethod
+    def predict_one(self, x: dict, p: Union[ClfTarget, None] = None) -> None:
         """Update a concept representation with a single observation drawn from a concept,
         classified by a given classifier. Updates unsupervised meta-features, as in river."""
+
+    @abc.abstractmethod
+    def get_values(self) -> List:
+        """Return a single value describing each meta-feature in the representation.
+        Returned as a vector, even for single meta-feature representations."""
 
     @property
     def _vector(self) -> bool:
