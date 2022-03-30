@@ -29,7 +29,11 @@ class State:  # pylint: disable=too-few-public-methods
         )
         self.train_representation = train_representation
 
-    def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> State:
+        self.seen_weight = 0.0
+        self.active_seen_weight = 0.0
+        self.weight_since_last_active = 0.0
+
+    def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0, is_active: bool = True) -> State:
         """Train the classifier and concept representation."""
 
         if self.train_representation:
@@ -45,6 +49,7 @@ class State:  # pylint: disable=too-few-public-methods
             self.classifier.learn_one(x=x, y=y, sample_weight=sample_weight)
         except TypeError:
             self.classifier.learn_one(x=x, y=y)
+
         return self
 
     def predict_one(self, x: dict) -> ClfTarget:
@@ -54,6 +59,14 @@ class State:  # pylint: disable=too-few-public-methods
         if self.train_representation:
             self.concept_representation.predict_one(x=x, p=p)
         return p
+
+    def step(self, sample_weight: float = 1.0, is_active: bool = True) -> None:
+        """Step states tracking statistics"""
+        self.seen_weight += sample_weight
+        self.weight_since_last_active += sample_weight
+        if is_active:
+            self.active_seen_weight += sample_weight
+            self.weight_since_last_active = 0
 
     def get_similarity_to_state(self, state_b: State, comparison: RepresentationComparer) -> float:
         """Return a similarity value between this state and another state."""

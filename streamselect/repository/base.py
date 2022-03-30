@@ -1,11 +1,22 @@
 """ Base class for maintaining a repository of states. """
 
-from typing import Dict
+from enum import Enum
+from typing import Callable, Dict, Union
 
-from streamselect.repository import TransitionFSM
+from river.base import Classifier
+
+from streamselect.concept_representations import ConceptRepresentation
+from streamselect.repository.transition_fsm import TransitionFSM
 from streamselect.states import State
 
 __all__ = ["Repository"]
+
+
+class ValuationPolicy(Enum):
+    NoPolicy = (0,)
+    FIFO = 1
+    LRU = 2
+    Accuracy = 3
 
 
 class Repository:  # pylint: disable=too-few-public-methods
@@ -13,11 +24,67 @@ class Repository:  # pylint: disable=too-few-public-methods
     Handles memory management.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        max_size: int = -1,
+        valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
+        classifier_constructor: Union[Callable[[], Classifier], None] = None,
+        representation_constructor: Union[Callable[[], ConceptRepresentation], None] = None,
+        train_representation: bool = True,
+    ) -> None:
+        """
+        Parameters
+        ----------
+        max_size: int
+            Default -1
+            Maximum number of states able to be stored.
+            -1 represents unlimited. Anything else requires
+            a deletion valuation policy.
+
+        valuation_policy: ValiationPolicy
+        Default NoPolicy
+            The valuation policy to use. Must be set if max_size != -1
+
+        classifier_constructor: Union[Callable[[], Classifier], None]
+            A function to generate a new classifier, or none.
+            Must be set to a valid constructor to automatically construct states.
+
+        representation_constructor: Union[Callable[[], ConceptRepresentation], None]
+            A function to generate a new concept representation, or none.
+            Must be set to a valid constructor to automatically construct states.
+
+        train_representation: bool
+            Whether or not new states train representations.
+            Must be set to automatically construct states.
+
+        """
+        self.max_size = max_size
+        self.valuation_policy = valuation_policy
+        self.classifier_constructor = classifier_constructor
+        self.representation_constructor = representation_constructor
+        self.train_representation = train_representation
+
+        self.next_id = 0
+
         self.states: Dict[int, State] = {}
         self.base_transitions = TransitionFSM()
         self.warning_transitions = TransitionFSM()
         self.drift_transitions = TransitionFSM()
+        self.all_transitions = [self.base_transitions, self.warning_transitions, self.drift_transitions]
+
+    def add_next_state(self) -> State:
+        """Create and add a state with the next valid ID.
+        Return this state. Can only use if classifier constructor is set."""
+        if self.classifier_constructor is None or self.representation_constructor is None:
+            raise ValueError("Cannot construct state without setting valid constructors")
+
+        state = State(
+            self.classifier_constructor(), self.representation_constructor(), self.next_id, self.train_representation
+        )
+        self.add(state)
+        self.next_id += 1
+
+        return state
 
     def add(self, new_state: State) -> None:
         """Add a new state to the repository.
@@ -26,6 +93,9 @@ class Repository:  # pylint: disable=too-few-public-methods
             raise ValueError(f"State with id {new_state.state_id} already exists.")
 
         self.states[new_state.state_id] = new_state
+
+        while len(self.states) > self.max_size and self.max_size != -1:
+            self.memory_management_deletion()
 
     def add_transition(
         self, from_state: State, to_state: State, weight: int = 1, in_drift: bool = False, in_warning: bool = False
@@ -44,3 +114,47 @@ class Repository:  # pylint: disable=too-few-public-methods
             raise ValueError(f"State with id {state.state_id} does not exist.")
 
         del self.states[state.state_id]
+        for transitions in self.all_transitions:
+            transitions.delete_state(state.state_id)
+
+    def step_all(self, active_state_id: int, sample_weight: float = 1.0) -> None:
+        """Call step on all states to update statistics."""
+        for state_id, state in self.states.items():
+            state.step(sample_weight, is_active=state_id == active_state_id)
+
+    def memory_management_deletion(self) -> None:
+        """Process the deletion of a single state.
+        We delete the state with minimum value with regards to the
+        valuation_policy parameter."""
+        del_state_id = min(self.states, key=self.apply_valuation_policy)
+        self.remove(self.states[del_state_id])
+
+    def apply_valuation_policy(self, state_id: int) -> float:
+        """Apply the current valuation policy to a state_id.
+        Returns the valuation.
+
+        Note
+        ----
+        The valuation should be a float representing the estimated benefit
+        provided by the state in the future."""
+        state = self.states[state_id]
+        strategy = None
+        if self.valuation_policy == ValuationPolicy.FIFO:
+            strategy = self.FIFO_valuation
+        elif self.valuation_policy == ValuationPolicy.LRU:
+            strategy = self.LRU_valuation
+
+        if strategy is None:
+            raise ValueError("Valuation required but no valid valuation policy specified.")
+
+        return strategy(state)
+
+    def FIFO_valuation(self, state: State) -> float:  # pylint: disable=R0201
+        """FIFO policies value states by their age, with a more recent
+        age valued higher."""
+        return -1 * state.seen_weight
+
+    def LRU_valuation(self, state: State) -> float:  # pylint: disable=R0201
+        """LRU policies value states by the time since last use, with a more recent
+        use valued higher."""
+        return -1 * state.weight_since_last_active

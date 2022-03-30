@@ -47,6 +47,11 @@ class TransitionFSM:
         self.out_degrees.setdefault(from_state_id, TransitionCounter()).add_direct(weight)
         self.in_degrees.setdefault(to_state_id, TransitionCounter()).add_direct(weight)
 
+        # Init empty counters
+        self.adjacency_list.setdefault(to_state_id, {})
+        self.out_degrees.setdefault(to_state_id, TransitionCounter())
+        self.in_degrees.setdefault(from_state_id, TransitionCounter())
+
     def get_transition_weight(self, from_state_id: int, to_state_id: int, smoothing_weight: int = 0) -> float:
         """Get the weight associated with a given transition. If not found, return the min value."""
         try:
@@ -71,7 +76,7 @@ class TransitionFSM:
         state and next states as indirect. Since we do not know how to assign this weight, it
         is proportional."""
         if del_state_id not in self.in_degrees:
-            raise ValueError(f"State {del_state_id} does not exist in the transition FSM so cannot be deleted.")
+            return
 
         total_inweight = self.in_degrees[del_state_id]
         del self.in_degrees[del_state_id]
