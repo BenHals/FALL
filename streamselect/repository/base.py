@@ -79,7 +79,7 @@ class Repository:  # pylint: disable=too-few-public-methods
             raise ValueError("Cannot construct state without setting valid constructors")
 
         state = State(
-            self.classifier_constructor(), self.representation_constructor(), self.next_id, self.train_representation
+            self.classifier_constructor(), self.representation_constructor, self.next_id, self.train_representation
         )
         self.add(state)
         self.next_id += 1

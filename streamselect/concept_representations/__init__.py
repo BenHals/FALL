@@ -6,7 +6,6 @@ a similarity method to another concept representation. Ideally, it should also b
 online."""
 
 from .base import ConceptRepresentation
-from .comparers import AbsoluteValueComparer, RepresentationComparer
 from .error_rate_representation import ErrorRateRepresentation
 from .meta_feature_distributions import (
     DistributionTypes,
@@ -16,8 +15,6 @@ from .meta_feature_distributions import (
 
 __all__ = [
     "ConceptRepresentation",
-    "RepresentationComparer",
-    "AbsoluteValueComparer",
     "ErrorRateRepresentation",
     "DistributionTypes",
     "SingleValueDistribution",

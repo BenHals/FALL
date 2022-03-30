@@ -5,7 +5,9 @@ from typing import List
 
 from river.base import Base
 
-from .base import ConceptRepresentation
+from streamselect.concept_representations import ConceptRepresentation
+from streamselect.repository import Repository
+from streamselect.states import State
 
 
 class RepresentationComparer(Base, abc.ABC):
@@ -15,7 +17,21 @@ class RepresentationComparer(Base, abc.ABC):
 
     @abc.abstractmethod
     def get_similarity(self, rep_a: ConceptRepresentation, rep_b: ConceptRepresentation) -> float:
-        """Teturns the similarity between concept representations."""
+        """Returns the similarity between concept representations."""
+
+    def get_state_similarity(self, state_a: State, state_b: State) -> float:
+        """Returns the similarity between states."""
+        return self.get_similarity(state_a.get_self_representation(), state_b.get_self_representation())
+
+    def get_state_rep_similarity(self, state_a: State, rep_b: ConceptRepresentation) -> float:
+        """Returns the similarity between a state and a concept representations."""
+        return self.get_similarity(state_a.get_self_representation(), rep_b)
+
+    def train_supervised(self, repository: Repository) -> None:
+        """Train trainable components on the repository."""
+
+    def train_unsupervised(self, repository: Repository) -> None:
+        """Train trainable components on the repository."""
 
 
 class AbsoluteValueComparer(RepresentationComparer):

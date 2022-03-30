@@ -1,15 +1,13 @@
 """ Base state class"""
 from __future__ import annotations
 
+from typing import Callable
+
 from river import utils
 from river.base import Classifier
 from river.base.typing import ClfTarget
 
-from streamselect.concept_representations import (
-    ConceptRepresentation,
-    ErrorRateRepresentation,
-    RepresentationComparer,
-)
+from streamselect.concept_representations import ConceptRepresentation
 
 
 class State:  # pylint: disable=too-few-public-methods
@@ -18,30 +16,37 @@ class State:  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         classifier: Classifier,
-        concept_representation: ConceptRepresentation | None = None,
+        representation_constructor: Callable[[], ConceptRepresentation],
         state_id: int = -1,
         train_representation: bool = True,
     ) -> None:
         self.state_id = state_id
         self.classifier = classifier
-        self.concept_representation = (
-            concept_representation if concept_representation else ErrorRateRepresentation(window_size=1)
-        )
+        self.representation_constructor = representation_constructor
+        # Mapping between concept ids and representations using  self.classifier.
+        self.concept_representation: dict[int, ConceptRepresentation] = {
+            self.state_id: self.representation_constructor()
+        }
         self.train_representation = train_representation
 
         self.seen_weight = 0.0
         self.active_seen_weight = 0.0
         self.weight_since_last_active = 0.0
 
-    def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0, is_active: bool = True) -> State:
+    def learn_one(self, x: dict, y: ClfTarget, concept_id: int, sample_weight: float = 1.0) -> State:
         """Train the classifier and concept representation."""
 
         if self.train_representation:
+            representation = self.concept_representation.setdefault(concept_id, self.representation_constructor())
             # Make a prediction without training statistics,
             # to avoid training twice.
             with utils.pure_inference_mode():
                 p = self.classifier.predict_one(x)
-            self.concept_representation.learn_one(x=x, y=y, p=p)
+            representation.learn_one(x=x, y=y, p=p)
+
+        # We only train the classifier on data from the associated concept.
+        if concept_id != self.state_id:
+            return self
 
         # Some classifiers cannot take sample_weight.
         # Try/except to avoid branching
@@ -52,12 +57,13 @@ class State:  # pylint: disable=too-few-public-methods
 
         return self
 
-    def predict_one(self, x: dict) -> ClfTarget:
+    def predict_one(self, x: dict, concept_id: int) -> ClfTarget:
         """Make a prediction using the state classifier.
         Also trains unsupervised components of the classifier and concept representation."""
         p = self.classifier.predict_one(x)
         if self.train_representation:
-            self.concept_representation.predict_one(x=x, p=p)
+            representation = self.concept_representation.setdefault(concept_id, self.representation_constructor())
+            representation.predict_one(x=x, p=p)
         return p
 
     def step(self, sample_weight: float = 1.0, is_active: bool = True) -> None:
@@ -68,15 +74,10 @@ class State:  # pylint: disable=too-few-public-methods
             self.active_seen_weight += sample_weight
             self.weight_since_last_active = 0
 
-    def get_similarity_to_state(self, state_b: State, comparison: RepresentationComparer) -> float:
-        """Return a similarity value between this state and another state."""
-        return self.get_similarity_to_representation(state_b.concept_representation, comparison)
-
-    def get_similarity_to_representation(
-        self, rep_b: ConceptRepresentation, comparison: RepresentationComparer
-    ) -> float:
-        """Return a similarity value between this state and a concept representation."""
-        return comparison.get_similarity(self.concept_representation, rep_b)
+    def get_self_representation(self) -> ConceptRepresentation:
+        """Get the concept representation using this states classifier,
+        on data drawn from this concept."""
+        return self.concept_representation[self.state_id]
 
     def deactivate_train_representation(self) -> None:
         """Deactivate training representation.

@@ -15,8 +15,8 @@ class ErrorRateRepresentation(ConceptRepresentation):
     This is a common (implied) comparison target when testing error_rate."""
 
     def __init__(self, window_size: int):
-        super().__init__()
-        self.recent_error_rate = RollingMean(window_size)
+        super().__init__(window_size)
+        self.recent_error_rate = RollingMean(self.window_size)
         self.values = [0.0]
         self.distribution = [SingleValueDistribution()]
 

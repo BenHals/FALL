@@ -12,7 +12,15 @@ from .meta_feature_distributions import BaseDistribution, DistributionTypes
 class ConceptRepresentation(Base, abc.ABC):
     """A base concept representation."""
 
-    def __init__(self) -> None:
+    def __init__(self, window_size: int) -> None:
+        """
+        Parameters
+        ----------
+        window_size: int
+            The number of observations to calculate the representation over.
+        """
+        self.window_size = window_size
+
         # A concept representation represents a concept as a finite set of values, or meta-features
         self.values: List[float] = []
 
