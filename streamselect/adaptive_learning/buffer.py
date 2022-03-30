@@ -12,8 +12,8 @@ from river.base.typing import ClfTarget
 class Observation:
     """A container class for a stored observation."""
 
-    def __init__(self, X: dict, y: Optional[ClfTarget], sample_weight: float, seen_at: float) -> None:
-        self.X = X
+    def __init__(self, x: dict, y: Optional[ClfTarget], sample_weight: float, seen_at: float) -> None:
+        self.x = x
         self.y = y
         self.sample_weight = sample_weight
         self.seen_at = seen_at
@@ -46,13 +46,13 @@ class ObservationBuffer:
         self.stable_window: deque[Observation] = deque(maxlen=window_size)
 
     def buffer_data(
-        self, X: dict, y: Optional[ClfTarget], sample_weight: float, current_timestamp: float
+        self, x: dict, y: Optional[ClfTarget], sample_weight: float, current_timestamp: float
     ) -> List[Observation]:
-        """Add X and y to the buffer.
+        """Add x and y to the buffer.
         y is optional, and should be set to None if not known.
         Current_timestamp is a float corresponding to the current timestamp (could be the data index).
         Returns all observations released from the buffer."""
-        return self.add_observation(Observation(X, y, sample_weight, current_timestamp), current_timestamp)
+        return self.add_observation(Observation(x, y, sample_weight, current_timestamp), current_timestamp)
 
     def add_observation(self, observation: Observation, current_timestamp: float) -> List[Observation]:
         """Add a new observation.

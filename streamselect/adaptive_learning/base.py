@@ -110,7 +110,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         for stable_observation in stable_data:
             trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
             for state in trained_states:
-                state.predict_one(stable_observation.X, self.active_state_id)
+                state.predict_one(stable_observation.x, self.active_state_id)
 
         self.representation_comparer.train_unsupervised(self.repository)
         return p
@@ -126,7 +126,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
             for state in trained_states:
                 state.learn_one(
-                    x=stable_observation.X,
+                    x=stable_observation.x,
                     y=stable_observation.y,
                     concept_id=self.active_state_id,
                     sample_weight=stable_observation.sample_weight,
