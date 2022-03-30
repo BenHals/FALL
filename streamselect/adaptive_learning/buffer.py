@@ -41,9 +41,9 @@ class ObservationBuffer:
         self.window_size = window_size
         self.buffer_timeout = buffer_timeout
 
-        self.buffer: deque[Observation] = deque()
-        self.active_window: deque[Observation] = deque(maxlen=window_size)
-        self.stable_window: deque[Observation] = deque(maxlen=window_size)
+        self.buffer: deque[Observation] = deque()  # pylint: disable=unsubscriptable-object
+        self.active_window: deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
+        self.stable_window: deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
 
     def buffer_data(
         self, x: dict, y: Optional[ClfTarget], sample_weight: float, current_timestamp: float
