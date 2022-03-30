@@ -4,7 +4,7 @@ from new observations, as this may cause us to learn from multiple distributions
 A buffer is a simple way to wait a number of timesteps before learning. """
 
 from collections import deque
-from typing import Deque, Dict, List, Optional
+from typing import Deque, Dict, List, Optional, Tuple
 
 from river.base.typing import ClfTarget
 
@@ -27,48 +27,188 @@ class Observation:
 class ObservationBuffer:
     """A buffer to store observations before learning from."""
 
-    def __init__(self, window_size: int, buffer_timeout: float) -> None:
+    def __init__(self, window_size: int) -> None:
         """
         Parameters
         ----------
         window_size: int
             The number of observations to calculate representations over.
-
-        buffer_timeout: float
-            The number of timesteps to buffer observations.
-            Can be updated, i.e., buffer less early then slow down.
         """
         self.window_size = window_size
-        self.buffer_timeout = buffer_timeout
 
         self.buffer: Deque[Observation] = deque()  # pylint: disable=unsubscriptable-object
         self.active_window: Deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
         self.stable_window: Deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
 
     def buffer_data(
-        self, x: dict, y: Optional[ClfTarget], sample_weight: float, current_timestamp: float
+        self, x: dict, y: Optional[ClfTarget], sample_weight: float, current_timestamp: float, stable_timestamp: float
     ) -> List[Observation]:
         """Add x and y to the buffer.
         y is optional, and should be set to None if not known.
         Current_timestamp is a float corresponding to the current timestamp (could be the data index).
         Returns all observations released from the buffer."""
-        return self.add_observation(Observation(x, y, sample_weight, current_timestamp), current_timestamp)
+        return self.add_observation(Observation(x, y, sample_weight, current_timestamp), stable_timestamp)
 
-    def add_observation(self, observation: Observation, current_timestamp: float) -> List[Observation]:
+    def add_observation(self, observation: Observation, stable_timestamp: float) -> List[Observation]:
         """Add a new observation.
         Added directly to the active window, and to the buffer.
-        When observation.seen_at is older than the buffer_timeout, it is released
+        When observation.seen_at is older than the stable_timestamp, it is released
         to the stable window.
         Returns all observations released from the buffer."""
         self.active_window.append(observation)
         self.buffer.append(observation)
 
-        return self.release_buffer(current_timestamp)
+        return self.release_buffer(stable_timestamp)
 
-    def release_buffer(self, current_timestamp: float) -> List[Observation]:
-        """Release and return all observations from the buffer older than buffer_timeout."""
+    def release_buffer(self, stable_timestamp: float) -> List[Observation]:
+        """Release and return all observations from the buffer older than stable_timestamp."""
         released = []
-        while current_timestamp - self.buffer[0].seen_at >= self.buffer_timeout:
+        while len(self.buffer) and self.buffer[0].seen_at <= stable_timestamp:
             released.append(self.buffer.popleft())
 
         return released
+
+    def reset_on_drift(self, drift_timestep: float = -1.0) -> None:
+        """When a drift occurs, we must assume that data in the buffer before the drift_timestep is not stable
+        for the new active state and should be removed."""
+
+        while len(self.buffer) and self.buffer[0].seen_at <= drift_timestep:
+            self.buffer.popleft()
+        while len(self.active_window) and self.active_window[0].seen_at <= drift_timestep:
+            self.active_window.popleft()
+        while len(self.stable_window) and self.stable_window[0].seen_at <= drift_timestep:
+            self.stable_window.popleft()
+
+
+class SupervisedUnsupervisedBuffer:
+    """A class for maintaining supervised and unsupervised data separately."""
+
+    def __init__(
+        self,
+        window_size: int,
+        unsupervised_buffer_timeout: float,
+        supervised_buffer_timeout: float,
+        release_strategy: str = "supervised",
+    ) -> None:
+        """Maintains two buffers for supervised and unsupervised data.
+        Parameters
+        ----------
+        window_size: int
+            The size of window to maintain for active and stable windows
+
+        unsupervised_buffer_timeout: float
+            Number of timesteps to buffer unsupervised observations, dependent on strategy.
+
+        supervised_buffer_timeout: float
+            Number of timesteps to buffer supervised observations, dependent on strategy.
+
+        release_strategy: str [supervised, unsupervised, independent]
+            How buffer release is handled. "independent" releases buffers independently
+            depending on timestamp, while supervised and unsupervised release both buffers
+            when the respective timeout passes. Dependent modes are used when drift detection
+            is tied to a specific mode, i.e., only on supervised data.
+
+        """
+        self.window_size = window_size
+        self.unsupervised_buffer_timeout = unsupervised_buffer_timeout
+        self.supervised_buffer_timeout = supervised_buffer_timeout
+        self.release_strategy = release_strategy
+
+        self.supervised_active_timestamp = 0.0
+        self.unsupervised_active_timestamp = 0.0
+
+        self.unsupervised_buffer = ObservationBuffer(self.window_size)
+        self.supervised_buffer = ObservationBuffer(self.window_size)
+
+        self.stable_unsupervised: List[Observation] = []
+        self.stable_supervised: List[Observation] = []
+
+    def get_unsupervised_timestamps(self) -> Tuple[float, float]:
+        """Returns the active timestamp and stable timestamp for unsupervised data.
+        The active timestamp is what new data is added as, while the stable timestamp
+        is the threshold for releasing data.
+
+        If the release strategy is independent or unsupervised, this is based on unsupervised time.
+        If supervised, we time and release data based on the supervised clock."""
+        if self.release_strategy in ["independent", "unsupervised"]:
+            return (
+                self.unsupervised_active_timestamp,
+                self.unsupervised_active_timestamp - self.unsupervised_buffer_timeout,
+            )
+        return self.supervised_active_timestamp, self.supervised_active_timestamp - self.supervised_buffer_timeout
+
+    def get_supervised_timestamps(self) -> Tuple[float, float]:
+        """Returns the active timestamp and stable timestamp for supervised data.
+        The active timestamp is what new data is added as, while the stable timestamp
+        is the threshold for releasing data.
+
+        If the release strategy is independent or supervised, this is based on supervised time.
+        If supervised, we time and release data based on the unsupervised clock."""
+        if self.release_strategy in ["independent", "supervised"]:
+            return self.supervised_active_timestamp, self.supervised_active_timestamp - self.supervised_buffer_timeout
+        return (
+            self.unsupervised_active_timestamp,
+            self.unsupervised_active_timestamp - self.unsupervised_buffer_timeout,
+        )
+
+    def buffer_unsupervised(self, x: dict, current_timestamp: float = -1.0, sample_weight: float = 1.0) -> None:
+        """Add an unsupervised observation.
+        Current timestamp is -1.0 if unknown, in which case we simply increment by one.
+        This is fine when data comes in at regular intervals.
+        Otherwise, we set the timestamp to current_timestamp."""
+        active_timestamp, stable_timestamp = self.get_unsupervised_timestamps()
+        self.stable_unsupervised += self.unsupervised_buffer.buffer_data(
+            x=x,
+            y=None,
+            sample_weight=sample_weight,
+            current_timestamp=active_timestamp,
+            stable_timestamp=stable_timestamp,
+        )
+        if current_timestamp == -1.0:
+            self.unsupervised_active_timestamp += 1.0
+        else:
+            self.unsupervised_active_timestamp = current_timestamp
+
+    def buffer_supervised(
+        self, x: dict, y: ClfTarget, current_timestamp: float = -1.0, sample_weight: float = 1.0
+    ) -> None:
+        """Add a supervised observation.
+        Current timestamp is -1.0 if unknown, in which case we simply increment by one.
+        This is fine when data comes in at regular intervals, but may not be accurate with missing
+        or delayed data.
+        Otherwise, we set the timestamp to current_timestamp."""
+        active_timestamp, stable_timestamp = self.get_supervised_timestamps()
+        self.stable_supervised += self.supervised_buffer.buffer_data(
+            x=x,
+            y=y,
+            sample_weight=sample_weight,
+            current_timestamp=active_timestamp,
+            stable_timestamp=stable_timestamp,
+        )
+        if current_timestamp == -1.0:
+            self.supervised_active_timestamp += 1.0
+        else:
+            self.supervised_active_timestamp = current_timestamp
+
+    def collect_stable_unsupervised(self) -> List[Observation]:
+        """Get collected stable unsupervised data, and clear it from cache."""
+        collected = self.stable_unsupervised
+        self.stable_unsupervised = []
+        return collected
+
+    def collect_stable_supervised(self) -> List[Observation]:
+        """Get collected stable supervised data, and clear it from cache."""
+        collected = self.stable_supervised
+        self.stable_supervised = []
+        return collected
+
+    def reset_on_drift(self, drift_timestep: float = -1.0) -> None:
+        """When a drift occurs, we must assume that data in the buffer before the drift_timestep is not stable
+        for the new active state. If drift timestep is not set, we assume it is window_size
+        prior to the current timestep, i.e., the active window is stable."""
+        if drift_timestep == -1.0:
+            active_timestamp, _ = self.get_unsupervised_timestamps()
+            drift_timestep = active_timestamp - self.window_size
+
+        self.supervised_buffer.reset_on_drift(drift_timestep)
+        self.unsupervised_buffer.reset_on_drift(drift_timestep)
