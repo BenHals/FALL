@@ -4,7 +4,7 @@ from new observations, as this may cause us to learn from multiple distributions
 A buffer is a simple way to wait a number of timesteps before learning. """
 
 from collections import deque
-from typing import Dict, List, Optional
+from typing import Deque, Dict, List, Optional
 
 from river.base.typing import ClfTarget
 
@@ -41,9 +41,9 @@ class ObservationBuffer:
         self.window_size = window_size
         self.buffer_timeout = buffer_timeout
 
-        self.buffer: deque[Observation] = deque()  # pylint: disable=unsubscriptable-object
-        self.active_window: deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
-        self.stable_window: deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
+        self.buffer: Deque[Observation] = deque()  # pylint: disable=unsubscriptable-object
+        self.active_window: Deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
+        self.stable_window: Deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
 
     def buffer_data(
         self, x: dict, y: Optional[ClfTarget], sample_weight: float, current_timestamp: float
