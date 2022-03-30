@@ -4,7 +4,7 @@ from streamselect.concept_representations import ErrorRateRepresentation
 from streamselect.repository import Repository, ValuationPolicy
 
 
-def test_FIFO_policy() -> None:
+def test_fifo_policy() -> None:
     """Test FIFO policy, should delete oldest state"""
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
@@ -45,7 +45,7 @@ def test_FIFO_policy() -> None:
     assert s1.state_id not in repo.states
 
 
-def test_LRU_policy() -> None:
+def test_lru_policy() -> None:
     """Test LRU policy, should delete least recently used state"""
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,

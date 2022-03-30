@@ -140,21 +140,21 @@ class Repository:  # pylint: disable=too-few-public-methods
         state = self.states[state_id]
         strategy = None
         if self.valuation_policy == ValuationPolicy.FIFO:
-            strategy = self.FIFO_valuation
+            strategy = self.fifo_valuation
         elif self.valuation_policy == ValuationPolicy.LRU:
-            strategy = self.LRU_valuation
+            strategy = self.lru_valuation
 
         if strategy is None:
             raise ValueError("Valuation required but no valid valuation policy specified.")
 
         return strategy(state)
 
-    def FIFO_valuation(self, state: State) -> float:  # pylint: disable=R0201
+    def fifo_valuation(self, state: State) -> float:  # pylint: disable=R0201
         """FIFO policies value states by their age, with a more recent
         age valued higher."""
         return -1 * state.seen_weight
 
-    def LRU_valuation(self, state: State) -> float:  # pylint: disable=R0201
+    def lru_valuation(self, state: State) -> float:  # pylint: disable=R0201
         """LRU policies value states by the time since last use, with a more recent
         use valued higher."""
         return -1 * state.weight_since_last_active

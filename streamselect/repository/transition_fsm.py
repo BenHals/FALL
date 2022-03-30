@@ -59,7 +59,7 @@ class TransitionFSM:
         except KeyError:
             return smoothing_weight
 
-    def get_MLE_prev_state(self, to_state_id: int) -> Tuple[int, float]:
+    def get_mle_prev_state(self, to_state_id: int) -> Tuple[int, float]:
         """Returns the id of the most likely previous state, and number of transitions.
         If no transitions exist, returns itself."""
         possible_previous_states = [(0.0, to_state_id)]
