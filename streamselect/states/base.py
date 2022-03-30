@@ -33,9 +33,10 @@ class State:  # pylint: disable=too-few-public-methods
         self.active_seen_weight = 0.0
         self.weight_since_last_active = 0.0
 
-    def learn_one(self, x: dict, y: ClfTarget, concept_id: int, sample_weight: float = 1.0) -> State:
+    def learn_one(self, x: dict, y: ClfTarget, concept_id: int | None = None, sample_weight: float = 1.0) -> State:
         """Train the classifier and concept representation."""
-
+        if concept_id is None:
+            concept_id = self.state_id
         if self.train_representation:
             representation = self.concept_representation.setdefault(concept_id, self.representation_constructor())
             # Make a prediction without training statistics,
@@ -57,9 +58,11 @@ class State:  # pylint: disable=too-few-public-methods
 
         return self
 
-    def predict_one(self, x: dict, concept_id: int) -> ClfTarget:
+    def predict_one(self, x: dict, concept_id: int | None = None) -> ClfTarget:
         """Make a prediction using the state classifier.
         Also trains unsupervised components of the classifier and concept representation."""
+        if concept_id is None:
+            concept_id = self.state_id
         p = self.classifier.predict_one(x)
         if self.train_representation:
             representation = self.concept_representation.setdefault(concept_id, self.representation_constructor())

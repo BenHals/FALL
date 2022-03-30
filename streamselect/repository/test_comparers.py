@@ -1,10 +1,10 @@
 """ Testing concept representations comparison. """
 from numpy.testing import assert_array_almost_equal
 
-from streamselect.concept_representations.comparers import AbsoluteValueComparer
 from streamselect.concept_representations.error_rate_representation import (
     ErrorRateRepresentation,
 )
+from streamselect.repository.comparers import AbsoluteValueComparer
 
 
 def test_absolute_value_comparer() -> None:
