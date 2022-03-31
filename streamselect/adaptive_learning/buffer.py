@@ -64,7 +64,9 @@ class ObservationBuffer:
         """Release and return all observations from the buffer older than stable_timestamp."""
         released = []
         while len(self.buffer) and self.buffer[0].seen_at <= stable_timestamp:
-            released.append(self.buffer.popleft())
+            stable_observation = self.buffer.popleft()
+            released.append(stable_observation)
+            self.stable_window.append(stable_observation)
 
         return released
 
@@ -206,9 +208,25 @@ class SupervisedUnsupervisedBuffer:
         """When a drift occurs, we must assume that data in the buffer before the drift_timestep is not stable
         for the new active state. If drift timestep is not set, we assume it is window_size
         prior to the current timestep, i.e., the active window is stable."""
-        if drift_timestep == -1.0:
-            active_timestamp, _ = self.get_unsupervised_timestamps()
-            drift_timestep = active_timestamp - self.window_size
+        unsupervised_drift_timestep = drift_timestep
+        if unsupervised_drift_timestep == -1.0:
+            active_timestamp, stable_timestamp = self.get_unsupervised_timestamps()
+            unsupervised_drift_timestep = active_timestamp - self.window_size
+            remaining_stable = int(stable_timestamp - drift_timestep)
+            if remaining_stable > 0:
+                self.stable_unsupervised = self.stable_unsupervised[-remaining_stable:]
+            else:
+                self.stable_unsupervised = []
 
-        self.supervised_buffer.reset_on_drift(drift_timestep)
-        self.unsupervised_buffer.reset_on_drift(drift_timestep)
+        supervised_drift_timestep = drift_timestep
+        if supervised_drift_timestep == -1.0:
+            active_timestamp, stable_timestamp = self.get_supervised_timestamps()
+            supervised_drift_timestep = active_timestamp - self.window_size
+            remaining_stable = int(stable_timestamp - drift_timestep)
+            if remaining_stable > 0:
+                self.stable_supervised = self.stable_supervised[-remaining_stable:]
+            else:
+                self.stable_supervised = []
+
+        self.unsupervised_buffer.reset_on_drift(unsupervised_drift_timestep)
+        self.supervised_buffer.reset_on_drift(supervised_drift_timestep)

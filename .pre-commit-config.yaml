@@ -18,6 +18,8 @@ repos:
     hooks:
       - id: flake8
         language_version: python3
+        args:
+          - --ignore=E203
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.1.0
     hooks:
