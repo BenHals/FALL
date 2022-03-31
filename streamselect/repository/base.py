@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Callable, Dict, Union
 
 from river.base import Classifier
+from river.base.typing import ClfTarget
 
 from streamselect.concept_representations import ConceptRepresentation
 from streamselect.repository.transition_fsm import TransitionFSM
@@ -121,6 +122,22 @@ class Repository:  # pylint: disable=too-few-public-methods
         """Call step on all states to update statistics."""
         for state_id, state in self.states.items():
             state.step(sample_weight, is_active=state_id == active_state_id)
+
+    def get_repository_predictions(self, x: dict, active_state_id: int, prediction_mode: str) -> Dict[int, ClfTarget]:
+        """Makes a prediction for states in the repository.
+        Returns
+        -------
+            state_predictions: Dict[int, ClfTarget]
+                A dict of state_ids to their predictions.
+                Contains all states if prediction_mode == "all"
+                    otherwise only the active state prediciton."""
+        state_predictions: Dict[int, ClfTarget] = {}
+        active_state = self.states[active_state_id]
+        states_to_predict = self.states.values() if prediction_mode == "all" else [active_state]
+        for state in states_to_predict:
+            p = state.predict_one(x, active_state_id)
+            state_predictions[state.state_id] = p
+        return state_predictions
 
     def memory_management_deletion(self) -> None:
         """Process the deletion of a single state.

@@ -26,6 +26,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         train_representation: bool = True,
         window_size: int = 1,
         construct_pair_representations: bool = False,
+        prediction_mode: str = "active",
     ):
         """
         Parameters
@@ -57,12 +58,21 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             Must be set to automatically construct states.
 
         window_size: int
+            Default: 1
             The number of observations to construct a concept representation over.
 
         construct_pair_representations: bool
+            Default: False
             Whether or not to construct a representation for each concept, classifier pair.
             Such a pair R_{ij} represents data drawn from concept j classified by state i.
             If False, only constructs R_{ii}, which is fine for many adaptive learning systems.
+
+        prediction_mode: str ["active", "all"]
+            Default: "active"
+            Which states must make predictions.
+            "active" only makes predictions with the active state
+            "all" makes predictions with all classifiers, e.g., for an ensemble.
+
 
         """
         self.max_size = max_size
@@ -74,13 +84,19 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.train_representation = train_representation
         self.window_size = window_size
         self.construct_pair_representations = construct_pair_representations
+        self.prediction_mode = prediction_mode
+
+        # Validation
+        if self.prediction_mode != "all" and self.construct_pair_representations:
+            raise ValueError(
+                "Prediction mode not set to all, but construct_pair_representation requires all predictions."
+            )
 
         # timestep for unsupervised data
         self.supervised_timestep = 0
         # timestep for supervised data
         self.unsupervised_timestep = 0
 
-        self.active_state_id: int = 0
         self.repository = Repository(
             max_size=self.max_size,
             valuation_policy=self.valuation_policy,
@@ -88,27 +104,38 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             representation_constructor=self.representation_constructor,
             train_representation=self.train_representation,
         )
-        self.repository.add_next_state()
+        active_state: State = self.repository.add_next_state()
+        self.active_state_id: int = active_state.state_id
 
-        self.recent_representation = self.representation_constructor()
+        self.active_window_state_representations: Dict[int, ConceptRepresentation] = {
+            self.active_state_id: self.representation_constructor()
+        }
 
     def predict_one(self, x: dict) -> ClfTarget:
         """Make a prediction using the active state classifier.
         Also trains unsupervised components of the classifier and concept representation.
         """
-        active_state = self.get_active_state()
-        with pure_inference_mode():
-            p = active_state.predict_one(x, self.active_state_id)
-        self.recent_representation.predict_one(x, p)
+        state_predictions = self.repository.get_repository_predictions(x, self.active_state_id, self.prediction_mode)
+        p = self.combine_predictions(state_predictions)
 
-        # Train unsupervised representation features
-        trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
-        for state in trained_states:
-            state.predict_one(x, self.active_state_id)
+        self.train_components_unsupervised(x, state_predictions)
+
+        return p
+
+    def combine_predictions(self, state_predictions: Dict[int, ClfTarget]) -> ClfTarget:
+        """Combines state predictions into a single output prediction."""
+        return state_predictions[self.active_state_id]
+
+    def train_components_unsupervised(self, x: dict, state_predictions: Dict[int, ClfTarget]) -> None:
+        """Train non-state components with unsupervised data."""
+        # Train representations of recent data
+        for state_id, state_p in state_predictions.items():
+            representation = self.active_window_state_representations[state_id]
+            representation.predict_one(x, state_p)
 
         self.representation_comparer.train_unsupervised(self.repository)
+
         self.unsupervised_timestep += 1
-        return p
 
     def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> None:
         active_state = self.get_active_state()
@@ -123,13 +150,23 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
                 sample_weight=sample_weight,
             )
 
-        # Train recent concept representation
+        # Train recent concept representation for active state
+        self.train_components_supervised(x, y, sample_weight)
+
+        self.step()
+
+    def train_components_supervised(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> None:
+        """Train non-state components with supervised data."""
         with pure_inference_mode():
-            p = active_state.predict_one(x, self.active_state_id)
-        self.recent_representation.learn_one(x, y, p)
+            state_predictions = self.repository.get_repository_predictions(x, self.active_state_id, "active")
+
+        for state_id, state_p in state_predictions.items():
+            representation = self.active_window_state_representations[state_id]
+            representation.learn_one(x, y, state_p)
+
+        self.representation_comparer.train_supervised(self.repository)
 
         self.supervised_timestep += 1
-        self.step()
 
     def step(self) -> None:
         """Update internal state"""
@@ -166,7 +203,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         active_state = self.get_active_state()
         active_state_relevance = self.representation_comparer.get_state_rep_similarity(
-            active_state, self.recent_representation
+            active_state, self.active_window_state_representations[active_state.state_id]
         )
 
         in_drift, in_warning = self.drift_detector.update(active_state_relevance)  # type: ignore
@@ -191,6 +228,18 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.repository.add_transition(
             current_active_state, next_active_state, in_drift=in_drift, in_warning=in_warning
         )
+
+        self.transition_reset(current_active_state.state_id, next_active_state.state_id, in_drift, in_warning)
+
+    def transition_reset(
+        self, prev_active_state_id: int, next_active_state_id: int, in_drift: bool, in_warning: bool
+    ) -> None:
+        """Reset statistics after a transition."""
+
+        # Clear deleted states
+        for state_id, _ in list(self.active_window_state_representations.items()):
+            if state_id not in self.repository.states:
+                del self.active_window_state_representations[state_id]
 
 
 class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
@@ -276,10 +325,11 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         Also trains unsupervised components of the classifier and concept representation.
 
         Note: A buffer is used to only train on stable"""
-        active_state = self.get_active_state()
         with pure_inference_mode():
-            p = active_state.predict_one(x, self.active_state_id)
-        self.recent_representation.predict_one(x, p)
+            state_predictions = self.repository.get_repository_predictions(
+                x, self.active_state_id, self.prediction_mode
+            )
+        p = self.combine_predictions(state_predictions)
 
         # Train unsupervised representation features
         # In the buffered version, we train on observations coming out
@@ -287,11 +337,11 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         self.buffer.buffer_unsupervised(x)
         stable_data = self.buffer.collect_stable_unsupervised()
         for stable_observation in stable_data:
-            trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
-            for state in trained_states:
-                state.predict_one(stable_observation.x, self.active_state_id)
+            state_predictions = self.repository.get_repository_predictions(
+                stable_observation.x, self.active_state_id, self.prediction_mode
+            )
+            self.train_components_unsupervised(x, state_predictions)
 
-        self.representation_comparer.train_unsupervised(self.repository)
         return p
 
     def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> None:
@@ -314,13 +364,13 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
                     sample_weight=stable_observation.sample_weight,
                 )
 
-        # Train recent concept representation
-        with pure_inference_mode():
-            p = active_state.predict_one(x, self.active_state_id)
-        self.recent_representation.learn_one(x, y, p)
+        # Train recent concept representation for active state
+        self.train_components_supervised(x, y, sample_weight)
 
         self.step()
 
-    def transition_active_state(self, next_active_state: State, in_drift: bool, in_warning: bool) -> None:
-        super().transition_active_state(next_active_state, in_drift, in_warning)
+    def transition_reset(
+        self, prev_active_state_id: int, next_active_state_id: int, in_drift: bool, in_warning: bool
+    ) -> None:
+        super().transition_reset(prev_active_state_id, next_active_state_id, in_drift, in_warning)
         self.buffer.reset_on_drift()
