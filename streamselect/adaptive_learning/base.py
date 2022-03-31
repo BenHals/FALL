@@ -1,6 +1,6 @@
 """ Base adaptive learning class. """
 import abc
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Set, Tuple
 
 from river.base import Classifier, DriftDetector
 from river.base.typing import ClfTarget
@@ -129,8 +129,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def train_components_unsupervised(self, x: dict, state_predictions: Dict[int, ClfTarget]) -> None:
         """Train non-state components with unsupervised data."""
         # Train representations of recent data
-        for state_id, state_p in state_predictions.items():
-            representation = self.active_window_state_representations[state_id]
+        for state_id, representation in self.active_window_state_representations.items():
+            state_p = state_predictions[state_id]
             representation.predict_one(x, state_p)
 
         self.representation_comparer.train_unsupervised(self.repository)
@@ -158,10 +158,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def train_components_supervised(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> None:
         """Train non-state components with supervised data."""
         with pure_inference_mode():
-            state_predictions = self.repository.get_repository_predictions(x, self.active_state_id, "active")
+            state_predictions = self.repository.get_repository_predictions(
+                x, self.active_state_id, self.prediction_mode
+            )
 
-        for state_id, state_p in state_predictions.items():
-            representation = self.active_window_state_representations[state_id]
+        for state_id, representation in self.active_window_state_representations.items():
+            state_p = state_predictions[state_id]
             representation.learn_one(x, y, state_p)
 
         self.representation_comparer.train_supervised(self.repository)
@@ -236,10 +238,17 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     ) -> None:
         """Reset statistics after a transition."""
 
-        # Clear deleted states
-        for state_id, _ in list(self.active_window_state_representations.items()):
-            if state_id not in self.repository.states:
-                del self.active_window_state_representations[state_id]
+        # Create an active representation for the states we are predicting for.
+        representation_ids: Set[int] = {next_active_state_id}
+        if self.prediction_mode == "all":
+            representation_ids = set(self.repository.states)
+
+        self.active_window_state_representations = {
+            s_id: self.active_window_state_representations[s_id]
+            if s_id in self.active_window_state_representations
+            else self.representation_constructor()
+            for s_id in representation_ids
+        }
 
 
 class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
