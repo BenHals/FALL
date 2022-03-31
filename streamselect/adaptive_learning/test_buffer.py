@@ -421,7 +421,7 @@ def test_supervised_unsupervised_buffer_qa_unsupervised() -> None:
         if t in [0, 1]:
             assert not list(o.y for o in collected_supervised)
             assert not list(o.x for o in collected_supervised)
-            assert list(o.x for o in collected_unsupervised)
+            assert not list(o.x for o in collected_unsupervised)
         if t in [2]:
             assert not list(o.y for o in collected_supervised)
             assert not list(o.x for o in collected_supervised)
