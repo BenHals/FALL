@@ -23,6 +23,12 @@ class Observation:
     def add_prediction(self, p: ClfTarget, state_id: int) -> None:
         self.predictions[state_id] = p
 
+    def __str__(self) -> str:
+        return f"<{self.x}|{self.y}|{self.seen_at}>"
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class ObservationBuffer:
     """A buffer to store observations before learning from."""
@@ -110,6 +116,20 @@ class SupervisedUnsupervisedBuffer:
             when the respective timeout passes. Dependent modes are used when drift detection
             is tied to a specific mode, i.e., only on supervised data.
 
+        Notes
+        -----
+        We match observations by timestamp, i.e., a supervised observation with timestamp
+        t should be associated with the unsupervised observation with timestamp t.
+        For example, in "supervised" mode, if we identify timestep t as being stable
+        due to observing supervised_buffer_timeout observations since t was received,
+        we will unbuffer both supervised and unsupervised observations <= t.
+
+        When specifically passed current_timestamp, we can handle missing data.
+        This matching is done automatically by river's simulate_qa.
+        We can also handle simple incrementing timestamps by setting current_timestamp to -1.0.
+        However, the incremental strategy cannot handle missing data, as we cannot tell what
+        timestamp a supervised observation represents.
+
         """
         self.window_size = window_size
         self.unsupervised_buffer_timeout = unsupervised_buffer_timeout
@@ -158,18 +178,19 @@ class SupervisedUnsupervisedBuffer:
         Current timestamp is -1.0 if unknown, in which case we simply increment by one.
         This is fine when data comes in at regular intervals.
         Otherwise, we set the timestamp to current_timestamp."""
-        active_timestamp, stable_timestamp = self.get_unsupervised_timestamps()
-        self.stable_unsupervised += self.unsupervised_buffer.buffer_data(
-            x=x,
-            y=None,
-            sample_weight=sample_weight,
-            current_timestamp=active_timestamp,
-            stable_timestamp=stable_timestamp,
-        )
         if current_timestamp == -1.0:
             self.unsupervised_active_timestamp += 1.0
         else:
             self.unsupervised_active_timestamp = current_timestamp
+
+        _, stable_timestamp = self.get_unsupervised_timestamps()
+        self.stable_unsupervised += self.unsupervised_buffer.buffer_data(
+            x=x,
+            y=None,
+            sample_weight=sample_weight,
+            current_timestamp=self.unsupervised_active_timestamp,
+            stable_timestamp=stable_timestamp,
+        )
 
     def buffer_supervised(
         self, x: dict, y: ClfTarget, current_timestamp: float = -1.0, sample_weight: float = 1.0
@@ -179,27 +200,32 @@ class SupervisedUnsupervisedBuffer:
         This is fine when data comes in at regular intervals, but may not be accurate with missing
         or delayed data.
         Otherwise, we set the timestamp to current_timestamp."""
-        active_timestamp, stable_timestamp = self.get_supervised_timestamps()
-        self.stable_supervised += self.supervised_buffer.buffer_data(
-            x=x,
-            y=y,
-            sample_weight=sample_weight,
-            current_timestamp=active_timestamp,
-            stable_timestamp=stable_timestamp,
-        )
         if current_timestamp == -1.0:
             self.supervised_active_timestamp += 1.0
         else:
             self.supervised_active_timestamp = current_timestamp
 
+        _, stable_timestamp = self.get_supervised_timestamps()
+        self.stable_supervised += self.supervised_buffer.buffer_data(
+            x=x,
+            y=y,
+            sample_weight=sample_weight,
+            current_timestamp=self.supervised_active_timestamp,
+            stable_timestamp=stable_timestamp,
+        )
+
     def collect_stable_unsupervised(self) -> List[Observation]:
         """Get collected stable unsupervised data, and clear it from cache."""
+        _, stable_timestamp = self.get_unsupervised_timestamps()
+        self.stable_unsupervised += self.unsupervised_buffer.release_buffer(stable_timestamp)
         collected = self.stable_unsupervised
         self.stable_unsupervised = []
         return collected
 
     def collect_stable_supervised(self) -> List[Observation]:
         """Get collected stable supervised data, and clear it from cache."""
+        _, stable_timestamp = self.get_supervised_timestamps()
+        self.stable_supervised += self.supervised_buffer.release_buffer(stable_timestamp)
         collected = self.stable_supervised
         self.stable_supervised = []
         return collected
@@ -209,24 +235,24 @@ class SupervisedUnsupervisedBuffer:
         for the new active state. If drift timestep is not set, we assume it is window_size
         prior to the current timestep, i.e., the active window is stable."""
         unsupervised_drift_timestep = drift_timestep
+        active_timestamp, stable_timestamp = self.get_unsupervised_timestamps()
         if unsupervised_drift_timestep == -1.0:
-            active_timestamp, stable_timestamp = self.get_unsupervised_timestamps()
             unsupervised_drift_timestep = active_timestamp - self.window_size
-            remaining_stable = int(stable_timestamp - drift_timestep)
-            if remaining_stable > 0:
-                self.stable_unsupervised = self.stable_unsupervised[-remaining_stable:]
-            else:
-                self.stable_unsupervised = []
+        remaining_stable = int(stable_timestamp - drift_timestep)
+        if remaining_stable > 0:
+            self.stable_unsupervised = self.stable_unsupervised[-remaining_stable:]
+        else:
+            self.stable_unsupervised = []
 
         supervised_drift_timestep = drift_timestep
+        active_timestamp, stable_timestamp = self.get_supervised_timestamps()
         if supervised_drift_timestep == -1.0:
-            active_timestamp, stable_timestamp = self.get_supervised_timestamps()
             supervised_drift_timestep = active_timestamp - self.window_size
-            remaining_stable = int(stable_timestamp - drift_timestep)
-            if remaining_stable > 0:
-                self.stable_supervised = self.stable_supervised[-remaining_stable:]
-            else:
-                self.stable_supervised = []
+        remaining_stable = int(stable_timestamp - drift_timestep)
+        if remaining_stable > 0:
+            self.stable_supervised = self.stable_supervised[-remaining_stable:]
+        else:
+            self.stable_supervised = []
 
         self.unsupervised_buffer.reset_on_drift(unsupervised_drift_timestep)
         self.supervised_buffer.reset_on_drift(supervised_drift_timestep)
