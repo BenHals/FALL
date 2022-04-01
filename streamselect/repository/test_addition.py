@@ -9,7 +9,7 @@ def test_add_next_state() -> None:
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier, representation_constructor=lambda: ErrorRateRepresentation(1)
     )
-
+    # pylint: disable=too-many-statements, duplicate-code, R0801
     s1 = repo.add_next_state()
     s2 = repo.add_next_state()
     s3 = repo.add_next_state()

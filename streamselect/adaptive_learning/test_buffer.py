@@ -10,6 +10,7 @@ from streamselect.adaptive_learning.buffer import (
 )
 
 
+# pylint: disable=too-many-statements, duplicate-code, R0801
 def test_observation() -> None:
     """Test the observation class."""
     x = {"x1": 1}

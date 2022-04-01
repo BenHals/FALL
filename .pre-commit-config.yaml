@@ -41,9 +41,8 @@ repos:
         args:
           - streamselect
           - --max-line-length=120
-          - --ignore-imports=yes
-          - -d duplicate-code
           - --good-names=i,j,x,y,v,p
+          - --disable=duplicate-code
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.9.0
     hooks:
