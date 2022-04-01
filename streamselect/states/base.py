@@ -34,7 +34,10 @@ class State:  # pylint: disable=too-few-public-methods
         self.weight_since_last_active = 0.0
 
     def learn_one(self, x: dict, y: ClfTarget, concept_id: int | None = None, sample_weight: float = 1.0) -> State:
-        """Train the classifier and concept representation."""
+        """Train the classifier and concept representation.
+        concept_id determines the concept the observation is thought to be drawn from.
+        The state classifier is NOT trained on observations with a concept_id which does not match
+        the state_id, however other statistics are updated."""
         if concept_id is None:
             concept_id = self.state_id
         if self.train_representation:

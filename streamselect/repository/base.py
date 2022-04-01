@@ -73,15 +73,19 @@ class Repository:  # pylint: disable=too-few-public-methods
         self.drift_transitions = TransitionFSM()
         self.all_transitions = [self.base_transitions, self.warning_transitions, self.drift_transitions]
 
+    def make_state(self, state_id: int) -> State:
+        """Construct a new state."""
+        if self.classifier_constructor is None or self.representation_constructor is None:
+            raise ValueError("Cannot construct state without setting valid constructors")
+        return State(
+            self.classifier_constructor(), self.representation_constructor, state_id, self.train_representation
+        )
+
     def add_next_state(self) -> State:
         """Create and add a state with the next valid ID.
         Return this state. Can only use if classifier constructor is set."""
-        if self.classifier_constructor is None or self.representation_constructor is None:
-            raise ValueError("Cannot construct state without setting valid constructors")
 
-        state = State(
-            self.classifier_constructor(), self.representation_constructor, self.next_id, self.train_representation
-        )
+        state = self.make_state(self.next_id)
         self.add(state)
         self.next_id += 1
 

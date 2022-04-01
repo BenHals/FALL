@@ -1,6 +1,6 @@
 """ Base adaptive learning class. """
 import abc
-from typing import Callable, Dict, Set, Tuple
+from typing import Callable, Dict, Optional, Set, Tuple, Union
 
 from river.base import Classifier, DriftDetector
 from river.base.typing import ClfTarget
@@ -20,13 +20,14 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         classifier_constructor: Callable[[], Classifier],
         representation_constructor: Callable[[int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
-        drift_detector: DriftDetector,
+        drift_detector_constructor: Callable[[], DriftDetector],
         max_size: int = -1,
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         train_representation: bool = True,
         window_size: int = 1,
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
+        background_state_mode: Union[str, int, None] = "drift_reset",
     ):
         """
         Parameters
@@ -40,8 +41,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
 
-        drift_detector: DriftDetector
-            An object capable of detecting drift in a univariate stream.
+        drift_detector_constructor: Callable[[], DriftDetector]
+            A function to generate an object capable of detecting drift in a univariate stream.
 
         max_size: int
             Default -1
@@ -73,6 +74,15 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             "active" only makes predictions with the active state
             "all" makes predictions with all classifiers, e.g., for an ensemble.
 
+        background_state_mode: str["drift_reset", "transition_reset"] | int | None
+            Default: "drift_reset"
+            Mode for background state. If None, no background state is run.
+            Otherwise, a background state is created and run alongside the active state
+            to determine when transitioning to a new state is optimal. The mode determines
+            how the background state is reset to match with recent data.
+            drift_reset: The state is reset when a drift in it's representation is detected
+            transition_reset: The state is reset only when a transition occurs
+            int>0: timed_reset, the state is reset periodically every int timesteps.
 
         """
         self.max_size = max_size
@@ -80,11 +90,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.classifier_constructor = classifier_constructor
         self.representation_constructor = lambda: representation_constructor(window_size)
         self.representation_comparer = representation_comparer
-        self.drift_detector = drift_detector
+        self.drift_detector_constructor = drift_detector_constructor
         self.train_representation = train_representation
         self.window_size = window_size
         self.construct_pair_representations = construct_pair_representations
         self.prediction_mode = prediction_mode
+        self.background_state_mode = background_state_mode
 
         # Validation
         if self.prediction_mode != "all" and self.construct_pair_representations:
@@ -104,12 +115,26 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             representation_constructor=self.representation_constructor,
             train_representation=self.train_representation,
         )
+        self.drift_detector = self.drift_detector_constructor()
         active_state: State = self.repository.add_next_state()
         self.active_state_id: int = active_state.state_id
 
         self.active_window_state_representations: Dict[int, ConceptRepresentation] = {
             self.active_state_id: self.representation_constructor()
         }
+
+        self.setup_background_state()
+
+    def setup_background_state(self) -> None:
+        """Setup or reset the background state."""
+        self.background_state: Optional[State] = None
+        self.background_state_active_representation: Optional[ConceptRepresentation] = None
+        self.background_state_detector: Optional[DriftDetector] = None
+        if self.background_state_mode:
+            self.background_state = self.repository.make_state(-1)
+            self.background_state_active_representation = self.representation_constructor()
+            if self.background_state_mode == "drift_reset":
+                self.background_state_detector = self.drift_detector_constructor()
 
     def predict_one(self, x: dict) -> ClfTarget:
         """Make a prediction using the active state classifier.
@@ -126,6 +151,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         """Combines state predictions into a single output prediction."""
         return state_predictions[self.active_state_id]
 
+    def train_background_unsupervised(self, x: dict, state_predictions: Dict[int, ClfTarget]) -> None:
+        if self.background_state:
+            bp = self.background_state.predict_one(x, concept_id=None)
+            if self.background_state_active_representation:
+                self.background_state_active_representation.predict_one(x, bp)
+
     def train_components_unsupervised(self, x: dict, state_predictions: Dict[int, ClfTarget]) -> None:
         """Train non-state components with unsupervised data."""
         # Train representations of recent data
@@ -141,8 +172,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         active_state = self.get_active_state()
 
         # train supervised representation features and state classifier.
-        trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
-        for state in trained_states:
+        trainable_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
+        for state in trainable_states:
             state.learn_one(
                 x=x,
                 y=y,
@@ -154,6 +185,15 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.train_components_supervised(x, y, sample_weight)
 
         self.step()
+
+    def train_background_supervised(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> None:
+        if self.background_state:
+            with pure_inference_mode():
+                bp = self.background_state.predict_one(x, concept_id=None)
+                self.background_state.learn_one(x, y, concept_id=None, sample_weight=sample_weight)
+            if self.background_state_active_representation:
+                self.background_state_active_representation.learn_one(x, y, bp)
+            self.background_state.step(sample_weight, is_active=True)
 
     def train_components_supervised(self, x: dict, y: ClfTarget, sample_weight: float = 1.0) -> None:
         """Train non-state components with supervised data."""
@@ -175,21 +215,60 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # Update state statistics
         self.repository.step_all(self.active_state_id)
 
-        self.representation_comparer.train_supervised(self.repository)
+        in_drift, in_warning, _ = self.active_state_drift_detection()
 
-        in_drift, in_warning, _ = self.perform_drift_detection()
+        self.evaluate_background_state(in_drift, in_warning)
 
         if in_drift:
             state_relevance = self.perform_reidentification()
             new_active_state = self.get_adapted_state(state_relevance)
             self.transition_active_state(new_active_state, True, in_warning)
 
+    def evaluate_background_state(self, in_drift: bool, in_warning: bool) -> None:
+        """Step the background state, and reset if needed."""
+        if not self.background_state:
+            return
+
+        reset_required = False
+        if self.background_state_mode == "drift_reset":
+            if self.background_state_active_representation:
+                b_in_drift, _, _ = self.perform_drift_detection(
+                    self.background_state, self.background_state_active_representation
+                )
+                reset_required = b_in_drift
+        elif self.background_state_mode == "transition_reset":
+            reset_required = in_drift
+        elif isinstance(self.background_state_mode, int):
+            reset_required = self.background_state.seen_weight > self.background_state_mode
+
+        if reset_required:
+            self.setup_background_state()
+
     def get_active_state(self) -> State:
         """Return the currently active state."""
         return self.repository.states[self.active_state_id]
 
-    def perform_drift_detection(self) -> Tuple[bool, bool, float]:
-        """Monitors the relevance of the currently active state.
+    def active_state_drift_detection(self) -> Tuple[bool, bool, float]:
+        """Monitors the relevance of the active state.
+        Returns
+        -------
+        in_drift: bool
+            True if a drift was detected.
+
+        in_warning: bool
+            True if a warning was detected
+
+        relevance: float
+            The relevance of the state to recent data."""
+
+        active_state = self.get_active_state()
+        active_representation = self.active_window_state_representations[active_state.state_id]
+        return self.perform_drift_detection(active_state, active_representation)
+
+    def perform_drift_detection(
+        self, state: State, state_representation: ConceptRepresentation
+    ) -> Tuple[bool, bool, float]:
+        """Monitors the relevance of a state.
         returns whether a drift or warning has been detected, and the relevance.
 
         Returns
@@ -200,17 +279,14 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         in_warning: bool
             True if a warning was detected
 
-        active_relevance: float
-            The relevance of the active state to recent data."""
+        relevance: float
+            The relevance of the state to recent data."""
 
-        active_state = self.get_active_state()
-        active_state_relevance = self.representation_comparer.get_state_rep_similarity(
-            active_state, self.active_window_state_representations[active_state.state_id]
-        )
+        state_relevance = self.representation_comparer.get_state_rep_similarity(state, state_representation)
 
-        in_drift, in_warning = self.drift_detector.update(active_state_relevance)  # type: ignore
+        in_drift, in_warning = self.drift_detector.update(state_relevance)  # type: ignore
 
-        return in_drift, in_warning, active_state_relevance
+        return in_drift, in_warning, state_relevance
 
     def perform_reidentification(self) -> Dict[int, float]:
         """Estimate the relevance of each state in the repository to current data."""
@@ -259,7 +335,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         classifier_constructor: Callable[[], Classifier],
         representation_constructor: Callable[[int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
-        drift_detector: DriftDetector,
+        drift_detector_constructor: Callable[[], DriftDetector],
         max_size: int = -1,
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         train_representation: bool = True,
@@ -279,8 +355,8 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
 
-        drift_detector: DriftDetector
-            An object capable of detecting drift in a univariate stream.
+        drift_detector_constructor: Callable[[], DriftDetector]
+            A function to generate an object capable of detecting drift in a univariate stream.
 
         max_size: int
             Default -1
@@ -312,7 +388,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             classifier_constructor,
             representation_constructor,
             representation_comparer,
-            drift_detector,
+            drift_detector_constructor,
             max_size,
             valuation_policy,
             train_representation,
