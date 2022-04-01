@@ -1,12 +1,16 @@
 """ Base adaptive learning class. """
 import abc
-from typing import Callable, Dict, Optional, Set, Tuple, Union
+from collections import deque
+from typing import Callable, Deque, Dict, Optional, Set, Tuple, Union
 
 from river.base import Classifier, DriftDetector
 from river.base.typing import ClfTarget
 from river.utils import pure_inference_mode
 
-from streamselect.adaptive_learning.buffer import SupervisedUnsupervisedBuffer
+from streamselect.adaptive_learning.buffer import (
+    Observation,
+    SupervisedUnsupervisedBuffer,
+)
 from streamselect.concept_representations import ConceptRepresentation
 from streamselect.repository import Repository, RepresentationComparer, ValuationPolicy
 from streamselect.states import State
@@ -108,6 +112,9 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # timestep for supervised data
         self.unsupervised_timestep = 0
 
+        self.unsupervised_active_window: Deque[Observation] = deque(maxlen=self.window_size)
+        self.supervised_active_window: Deque[Observation] = deque(maxlen=self.window_size)
+
         self.repository = Repository(
             max_size=self.max_size,
             valuation_policy=self.valuation_policy,
@@ -165,6 +172,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             representation.predict_one(x, state_p)
 
         self.representation_comparer.train_unsupervised(self.repository)
+        self.unsupervised_active_window.append(Observation(x, None, 1.0, self.unsupervised_timestep))
 
         self.unsupervised_timestep += 1
 
@@ -207,7 +215,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             representation.learn_one(x, y, state_p)
 
         self.representation_comparer.train_supervised(self.repository)
-
+        self.supervised_active_window.append(Observation(x, y, sample_weight, self.supervised_timestep))
         self.supervised_timestep += 1
 
     def step(self) -> None:
@@ -288,15 +296,69 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         return in_drift, in_warning, state_relevance
 
+    def get_unsupervised_active_window(self) -> Deque[Observation]:
+        """Returns the unsupervised active window as a deque of observations."""
+        return self.unsupervised_active_window
+
+    def get_supervised_active_window(self) -> Deque[Observation]:
+        """Returns the supervised active window as a deque of observations."""
+        return self.supervised_active_window
+
+    def construct_active_representation(self, state: State, mode: str = "supervised") -> ConceptRepresentation:
+        """Construct a new concept representation for the given state based on the current active window.
+
+        Parameters
+        ----------
+        mode: str["supervised", "unsupervised", "both"]
+            Default: "supervised"
+            Whther to use supervised, unsupervised, or both, active windows to train the representation."""
+        representation = self.representation_constructor()
+        supervised_timesteps = set()
+        if mode in ["supervised", "both"]:
+            for observation in self.get_supervised_active_window():
+                if observation.y is None:
+                    continue
+                supervised_timesteps.add(observation.seen_at)
+                p = state.predict_one(observation.x)
+                representation.predict_one(observation.x, p)
+                representation.learn_one(observation.x, observation.y, p)
+
+        if mode in ["unsupervised", "both"]:
+            for observation in self.get_unsupervised_active_window():
+                if observation.seen_at in supervised_timesteps:
+                    continue
+                p = state.predict_one(observation.x)
+                representation.predict_one(observation.x, p)
+
+        return representation
+
     def perform_reidentification(self) -> Dict[int, float]:
         """Estimate the relevance of each state in the repository to current data."""
-        return {k: 0.0 for k in self.repository.states}
+        state_relevance: Dict[int, float] = {}
+        for state_id, state in self.repository.states.items():
+            active_representation = self.active_window_state_representations.get(
+                state_id, self.construct_active_representation(state)
+            )
+            state_relevance[state_id] = self.representation_comparer.get_state_rep_similarity(
+                state, active_representation
+            )
+
+        if self.background_state and self.background_state_active_representation:
+            state_relevance[-1] = self.representation_comparer.get_state_rep_similarity(
+                self.background_state, self.background_state_active_representation
+            )
+        return state_relevance
 
     def get_adapted_state(self, state_relevance: Dict[int, float]) -> State:
         """Returns a new state adapted to current conditions, based on estimated relevance
         of previous states."""
-
-        new_state = self.repository.add_next_state()
+        max_state_id, _ = max(state_relevance.items(), key=lambda x: x[1])
+        if max_state_id == -1 and self.background_state:
+            new_state = self.repository.add_next_state()
+            new_state.classifier = self.background_state.classifier
+            new_state.concept_representation = self.background_state.concept_representation
+        else:
+            new_state = self.repository.states[max_state_id]
         return new_state
 
     def transition_active_state(self, next_active_state: State, in_drift: bool, in_warning: bool) -> None:
