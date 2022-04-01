@@ -33,7 +33,7 @@ jobs:
     - name: Run flake8
       run: flake8 --ignore=E203
     - name: Run Pylint
-      run: pylint streamselect --good-names=i,j,x,y,v,p
+      run: pylint streamselect --good-names=i,j,x,y,v,p --disable=duplicate-code
     - name: Run Mypy
       run: mypy streamselect
     - name: tests
