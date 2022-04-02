@@ -17,11 +17,13 @@ def test_observation() -> None:
     y = 0
     sample_weight = 1.0
     seen_at = 0
-    observation = Observation(x, y, sample_weight, seen_at)
+    active_state_id = 1
+    observation = Observation(x=x, y=y, active_state_id=active_state_id, sample_weight=sample_weight, seen_at=seen_at)
     assert observation.x == x
     assert observation.y == y
     assert observation.sample_weight == sample_weight
     assert observation.seen_at == seen_at
+    assert observation.active_state_id == active_state_id
     assert not observation.predictions
 
     observation.add_prediction(1, 0)
@@ -40,9 +42,15 @@ def test_observation_buffer_1() -> None:
     sample_weights = [1.0, 1.0, 0.0, 1.0, 1.0]
     timesteps = list(range(len(x_list)))
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
-        stable_timestep = timestep - buffer_timeout
+        stable_timestep = max(timestep - buffer_timeout, -1)
+        active_state_id = 1
         _ = buffer.buffer_data(
-            x, y, sample_weight=sample_weights[timestep], current_timestamp=timestep, stable_timestamp=stable_timestep
+            x,
+            y,
+            active_state_id=active_state_id,
+            sample_weight=sample_weights[timestep],
+            current_timestamp=timestep,
+            stable_timestamp=stable_timestep,
         )
 
         assert [o.y for o in buffer.active_window] == y_list[timestep + 1 - window_size : timestep + 1]
@@ -72,9 +80,15 @@ def test_observation_buffer_2() -> None:
     sample_weights = [1.0, 1.0, 0.0, 1.0, 1.0]
     timesteps = list(range(len(x_list)))
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
-        stable_timestep = timestep - buffer_timeout
+        stable_timestep = max(timestep - buffer_timeout, -1)
+        active_state_id = 1
         _ = buffer.buffer_data(
-            x, y, sample_weight=sample_weights[timestep], current_timestamp=timestep, stable_timestamp=stable_timestep
+            x,
+            y,
+            active_state_id=active_state_id,
+            sample_weight=sample_weights[timestep],
+            current_timestamp=timestep,
+            stable_timestamp=stable_timestep,
         )
 
         assert [o.y for o in buffer.active_window] == y_list[max(timestep + 1 - window_size, 0) : timestep + 1]
@@ -110,9 +124,15 @@ def test_observation_buffer_3() -> None:
     sample_weights = [1.0, 1.0, 0.0, 1.0, 1.0]
     timesteps = list(range(len(x_list)))
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
-        stable_timestep = timestep - buffer_timeout
+        stable_timestep = max(timestep - buffer_timeout, -1)
+        active_state_id = 1
         _ = buffer.buffer_data(
-            x, y, sample_weight=sample_weights[timestep], current_timestamp=timestep, stable_timestamp=stable_timestep
+            x,
+            y,
+            active_state_id=active_state_id,
+            sample_weight=sample_weights[timestep],
+            current_timestamp=timestep,
+            stable_timestamp=stable_timestep,
         )
 
         assert [o.y for o in buffer.active_window] == y_list[max(timestep + 1 - window_size, 0) : timestep + 1]
@@ -158,8 +178,14 @@ def test_observation_buffer_4() -> None:
     collected_stable_obs = []
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
         stable_timestep = max(timestep - buffer_timeout, -1)
+        active_state_id = 1
         stable_observations = buffer.buffer_data(
-            x, y, sample_weight=sample_weights[timestep], current_timestamp=timestep, stable_timestamp=stable_timestep
+            x,
+            y,
+            active_state_id=active_state_id,
+            sample_weight=sample_weights[timestep],
+            current_timestamp=timestep,
+            stable_timestamp=stable_timestep,
         )
         collected_stable_obs += stable_observations
 
@@ -207,8 +233,14 @@ def test_observation_buffer_drift_reset() -> None:
     buffer = ObservationBuffer(window_size=window_size)
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
         stable_timestep = max(timestep - buffer_timeout, -1)
+        active_state_id = 1
         _ = buffer.buffer_data(
-            x, y, sample_weight=sample_weights[timestep], current_timestamp=timestep, stable_timestamp=stable_timestep
+            x,
+            y,
+            active_state_id=active_state_id,
+            sample_weight=sample_weights[timestep],
+            current_timestamp=timestep,
+            stable_timestamp=stable_timestep,
         )
 
     assert [o.y for o in buffer.active_window] == [1, 0, 1]
@@ -223,8 +255,14 @@ def test_observation_buffer_drift_reset() -> None:
     buffer = ObservationBuffer(window_size=window_size)
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
         stable_timestep = max(timestep - buffer_timeout, -1)
+        active_state_id = 1
         _ = buffer.buffer_data(
-            x, y, sample_weight=sample_weights[timestep], current_timestamp=timestep, stable_timestamp=stable_timestep
+            x,
+            y,
+            active_state_id=active_state_id,
+            sample_weight=sample_weights[timestep],
+            current_timestamp=timestep,
+            stable_timestamp=stable_timestep,
         )
 
     assert [o.y for o in buffer.active_window] == [1, 0, 1]
@@ -243,8 +281,14 @@ def test_observation_buffer_drift_reset() -> None:
     buffer = ObservationBuffer(window_size=window_size)
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
         stable_timestep = max(timestep - buffer_timeout, -1)
+        active_state_id = 1
         _ = buffer.buffer_data(
-            x, y, sample_weight=sample_weights[timestep], current_timestamp=timestep, stable_timestamp=stable_timestep
+            x,
+            y,
+            active_state_id=active_state_id,
+            sample_weight=sample_weights[timestep],
+            current_timestamp=timestep,
+            stable_timestamp=stable_timestep,
         )
 
     assert [o.y for o in buffer.active_window] == [1, 0, 1]
@@ -271,8 +315,9 @@ def test_supervised_unsupervised_buffer() -> None:
 
     buffer = SupervisedUnsupervisedBuffer(window_size, -1.0, buffer_timeout)
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
-        buffer.buffer_supervised(x, y, sample_weight=sample_weights[timestep])
-        buffer.buffer_unsupervised(x, sample_weight=sample_weights[timestep])
+        active_state_id = 1
+        buffer.buffer_supervised(x, y, active_state_id=active_state_id, sample_weight=sample_weights[timestep])
+        buffer.buffer_unsupervised(x, active_state_id=active_state_id, sample_weight=sample_weights[timestep])
 
     collected_supervised = buffer.collect_stable_supervised()
     assert list(o.y for o in collected_supervised) == [0, 1, 1]
@@ -293,8 +338,9 @@ def test_supervised_unsupervised_buffer_incremental() -> None:
     collected_unsupervised = []
     buffer = SupervisedUnsupervisedBuffer(window_size, -1.0, buffer_timeout)
     for timestep, (x, y) in enumerate(zip(x_list, y_list)):
-        buffer.buffer_supervised(x, y, sample_weight=sample_weights[timestep])
-        buffer.buffer_unsupervised(x, sample_weight=sample_weights[timestep])
+        active_state_id = 1
+        buffer.buffer_supervised(x, y, active_state_id=active_state_id, sample_weight=sample_weights[timestep])
+        buffer.buffer_unsupervised(x, active_state_id=active_state_id, sample_weight=sample_weights[timestep])
         collected_unsupervised += buffer.collect_stable_unsupervised()
         collected_supervised += buffer.collect_stable_supervised()
 
@@ -320,12 +366,13 @@ def test_supervised_unsupervised_buffer_qa() -> None:
         #: Error in river typing, should allow None
         for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
             print(i, x, y)
+            active_state_id = 1
             supervised = y is not None
             if supervised:
-                buffer.buffer_supervised(x, y, current_timestamp=i)
+                buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
                 collected_supervised += buffer.collect_stable_supervised()
             else:
-                buffer.buffer_unsupervised(x, current_timestamp=i)
+                buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
                 collected_unsupervised += buffer.collect_stable_unsupervised()
 
         collected_supervised += buffer.collect_stable_supervised()
@@ -359,11 +406,12 @@ def test_supervised_unsupervised_buffer_qa_supervised() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()
         if t in [0, 1, 2, 3, 4, 5, 6]:
@@ -412,11 +460,12 @@ def test_supervised_unsupervised_buffer_qa_unsupervised() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()
         if t in [0, 1]:
@@ -482,11 +531,12 @@ def test_supervised_unsupervised_buffer_qa_independent() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()
         if t in [0, 1]:
@@ -550,11 +600,12 @@ def test_supervised_unsupervised_buffer_reset_supervised() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()
 
@@ -595,11 +646,12 @@ def test_supervised_unsupervised_buffer_reset_supervised_2() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()
 
@@ -642,11 +694,12 @@ def test_supervised_unsupervised_buffer_reset_supervised_3() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()
         t += 1
@@ -694,11 +747,12 @@ def test_supervised_unsupervised_buffer_reset_unsupervised() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         print(buffer.unsupervised_buffer.buffer)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()
@@ -747,11 +801,12 @@ def test_supervised_unsupervised_buffer_reset_independent() -> None:
     #: Error in river typing, should allow None
     for i, x, y in simulate_qa(dataset, moment=None, delay=delay):  # type: ignore
         print(i, x, y)
+        active_state_id = 1
         supervised = y is not None
         if supervised:
-            buffer.buffer_supervised(x, y, current_timestamp=i)
+            buffer.buffer_supervised(x, y, active_state_id=active_state_id, current_timestamp=i)
         else:
-            buffer.buffer_unsupervised(x, current_timestamp=i)
+            buffer.buffer_unsupervised(x, active_state_id=active_state_id, current_timestamp=i)
         print(buffer.unsupervised_buffer.buffer)
         collected_supervised += buffer.collect_stable_supervised()
         collected_unsupervised += buffer.collect_stable_unsupervised()

@@ -8,7 +8,7 @@ def test_fifo_policy() -> None:
     """Test FIFO policy, should delete oldest state"""
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda: ErrorRateRepresentation(1),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
         valuation_policy=ValuationPolicy.FIFO,
     )
     s1 = repo.add_next_state()
@@ -49,7 +49,7 @@ def test_lru_policy() -> None:
     """Test LRU policy, should delete least recently used state"""
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda: ErrorRateRepresentation(1),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
         valuation_policy=ValuationPolicy.LRU,
     )
     s1 = repo.add_next_state()

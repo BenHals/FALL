@@ -9,6 +9,7 @@ from river.base.typing import ClfTarget
 from streamselect.concept_representations import ConceptRepresentation
 from streamselect.repository.transition_fsm import TransitionFSM
 from streamselect.states import State
+from streamselect.utils import Observation
 
 __all__ = ["Repository"]
 
@@ -30,7 +31,7 @@ class Repository:  # pylint: disable=too-few-public-methods
         max_size: int = -1,
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         classifier_constructor: Union[Callable[[], Classifier], None] = None,
-        representation_constructor: Union[Callable[[], ConceptRepresentation], None] = None,
+        representation_constructor: Union[Callable[[int], ConceptRepresentation], None] = None,
         train_representation: bool = True,
     ) -> None:
         """
@@ -50,8 +51,8 @@ class Repository:  # pylint: disable=too-few-public-methods
             A function to generate a new classifier, or none.
             Must be set to a valid constructor to automatically construct states.
 
-        representation_constructor: Union[Callable[[], ConceptRepresentation], None]
-            A function to generate a new concept representation, or none.
+        representation_constructor: Union[Callable[[int], ConceptRepresentation], None]
+            A function which takes a state_id to generate a new concept representation, or none.
             Must be set to a valid constructor to automatically construct states.
 
         train_representation: bool
@@ -127,7 +128,7 @@ class Repository:  # pylint: disable=too-few-public-methods
         for state_id, state in self.states.items():
             state.step(sample_weight, is_active=state_id == active_state_id)
 
-    def get_repository_predictions(self, x: dict, active_state_id: int, prediction_mode: str) -> Dict[int, ClfTarget]:
+    def get_repository_predictions(self, observation: Observation, prediction_mode: str) -> Dict[int, ClfTarget]:
         """Makes a prediction for states in the repository.
         Returns
         -------
@@ -136,10 +137,10 @@ class Repository:  # pylint: disable=too-few-public-methods
                 Contains all states if prediction_mode == "all"
                     otherwise only the active state prediciton."""
         state_predictions: Dict[int, ClfTarget] = {}
-        active_state = self.states[active_state_id]
+        active_state = self.states[observation.active_state_id]
         states_to_predict = self.states.values() if prediction_mode == "all" else [active_state]
         for state in states_to_predict:
-            p = state.predict_one(x, active_state_id)
+            p = state.predict_one(observation)
             state_predictions[state.state_id] = p
         return state_predictions
 

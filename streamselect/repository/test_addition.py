@@ -7,7 +7,8 @@ from streamselect.repository import Repository
 def test_add_next_state() -> None:
     """Test automatic repo state construction."""
     repo = Repository(
-        classifier_constructor=HoeffdingTreeClassifier, representation_constructor=lambda: ErrorRateRepresentation(1)
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
     )
     # pylint: disable=too-many-statements, duplicate-code, R0801
     s1 = repo.add_next_state()

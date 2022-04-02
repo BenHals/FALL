@@ -3,13 +3,15 @@ from river.tree import HoeffdingTreeClassifier
 
 from streamselect.concept_representations import ErrorRateRepresentation
 from streamselect.repository import Repository
+from streamselect.utils import Observation
 
 
 def test_step_states() -> None:
     """Test step_all statistics."""
     # pylint: disable="too-many-statements"
     repo = Repository(
-        classifier_constructor=HoeffdingTreeClassifier, representation_constructor=lambda: ErrorRateRepresentation(1)
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
     )
     steps = [10, 5, 20]
     s1 = repo.add_next_state()
@@ -87,30 +89,33 @@ def test_state_predictions_active() -> None:
     """Test predictions in active mode"""
     # pylint: disable="too-many-statements"
     repo = Repository(
-        classifier_constructor=HoeffdingTreeClassifier, representation_constructor=lambda: ErrorRateRepresentation(1)
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
     )
     dataset = synth.STAGGER()
     s1 = repo.add_next_state()
     active_id = s1.state_id
     s1_test_classifier = HoeffdingTreeClassifier()
-    for x, y in dataset.take(25):
-        state_p = repo.get_repository_predictions(x, active_id, "active")
+    for t, (x, y) in enumerate(dataset.take(25)):
+        ob = Observation(x, y, t, active_id)
+        state_p = repo.get_repository_predictions(ob, "active")
         pt = s1_test_classifier.predict_one(x)
         assert state_p[active_id] == pt
-        repo.states[active_id].learn_one(x, y)
+        repo.states[active_id].learn_one(ob)
         s1_test_classifier.learn_one(x, y)
     s2 = repo.add_next_state()
     active_id = s2.state_id
     s2_test_classifier = HoeffdingTreeClassifier()
-    for x, y in dataset.take(25):
-        state_p = repo.get_repository_predictions(x, active_id, "active")
+    for t, (x, y) in enumerate(dataset.take(25), start=25):
+        ob = Observation(x, y, t, active_id)
+        state_p = repo.get_repository_predictions(ob, "active")
         print(state_p)
         assert len(state_p) == 1
         pt_1 = s1_test_classifier.predict_one(x)
         pt_2 = s2_test_classifier.predict_one(x)
         assert state_p[active_id] == pt_2
-        assert repo.states[s1.state_id].predict_one(x, active_id) == pt_1
-        repo.states[active_id].learn_one(x, y)
+        assert repo.states[s1.state_id].predict_one(ob) == pt_1
+        repo.states[active_id].learn_one(ob)
         s2_test_classifier.learn_one(x, y)
 
 
@@ -118,28 +123,31 @@ def test_state_predictions_all() -> None:
     """Test predictions in all mode"""
     # pylint: disable="too-many-statements"
     repo = Repository(
-        classifier_constructor=HoeffdingTreeClassifier, representation_constructor=lambda: ErrorRateRepresentation(1)
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
     )
     dataset = synth.STAGGER()
     s1 = repo.add_next_state()
     active_id = s1.state_id
     s1_test_classifier = HoeffdingTreeClassifier()
-    for x, y in dataset.take(25):
-        state_p = repo.get_repository_predictions(x, active_id, "all")
+    for t, (x, y) in enumerate(dataset.take(25)):
+        ob = Observation(x, y, t, active_id)
+        state_p = repo.get_repository_predictions(ob, "all")
         pt = s1_test_classifier.predict_one(x)
         assert state_p[active_id] == pt
-        repo.states[active_id].learn_one(x, y)
+        repo.states[active_id].learn_one(ob)
         s1_test_classifier.learn_one(x, y)
     s2 = repo.add_next_state()
     active_id = s2.state_id
     s2_test_classifier = HoeffdingTreeClassifier()
-    for x, y in dataset.take(25):
-        state_p = repo.get_repository_predictions(x, active_id, "all")
+    for t, (x, y) in enumerate(dataset.take(25), start=25):
+        ob = Observation(x, y, t, active_id)
+        state_p = repo.get_repository_predictions(ob, "all")
         print(state_p)
         assert len(state_p) == 2
         pt_1 = s1_test_classifier.predict_one(x)
         pt_2 = s2_test_classifier.predict_one(x)
         assert state_p[active_id] == pt_2
         assert state_p[s1.state_id] == pt_1
-        repo.states[active_id].learn_one(x, y)
+        repo.states[active_id].learn_one(ob)
         s2_test_classifier.learn_one(x, y)

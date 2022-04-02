@@ -8,6 +8,7 @@ from river.base import Classifier
 from river.base.typing import ClfTarget
 
 from streamselect.concept_representations import ConceptRepresentation
+from streamselect.utils import Observation
 
 
 class State:  # pylint: disable=too-few-public-methods
@@ -16,7 +17,7 @@ class State:  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         classifier: Classifier,
-        representation_constructor: Callable[[], ConceptRepresentation],
+        representation_constructor: Callable[[int], ConceptRepresentation],
         state_id: int = -1,
         train_representation: bool = True,
     ) -> None:
@@ -25,7 +26,7 @@ class State:  # pylint: disable=too-few-public-methods
         self.representation_constructor = representation_constructor
         # Mapping between concept ids and representations using  self.classifier.
         self.concept_representation: dict[int, ConceptRepresentation] = {
-            self.state_id: self.representation_constructor()
+            self.state_id: self.representation_constructor(self.state_id)
         }
         self.train_representation = train_representation
 
@@ -33,43 +34,88 @@ class State:  # pylint: disable=too-few-public-methods
         self.active_seen_weight = 0.0
         self.weight_since_last_active = 0.0
 
-    def learn_one(self, x: dict, y: ClfTarget, concept_id: int | None = None, sample_weight: float = 1.0) -> State:
+    def learn_one(self, supervised_observation: Observation, force_train_classifier: bool = False) -> State:
         """Train the classifier and concept representation.
         concept_id determines the concept the observation is thought to be drawn from.
         The state classifier is NOT trained on observations with a concept_id which does not match
-        the state_id, however other statistics are updated."""
-        if concept_id is None:
-            concept_id = self.state_id
+        the state_id unless force_train_classifier is set, however other statistics are updated.
+
+        Parameters
+        ----------
+
+        supervised_observation: Observation
+            The observation to train on. Must be supervised, i.e., have a valid y value.
+            The prediction on the observation is not used, but a new one is added to ensure
+            that the most up to date predictions are used.
+
+        force_train_classifier: bool
+            Default: False
+            Forces the state classifier to train on an observation regardless of which concept_id
+            the observation is from. When false, only observations with with an active_state_id
+            matching the state_id are used to train the classifier.
+
+        """
+        concept_id = supervised_observation.active_state_id if not force_train_classifier else self.state_id
         if self.train_representation:
-            representation = self.concept_representation.setdefault(concept_id, self.representation_constructor())
+            representation = self.concept_representation.setdefault(
+                concept_id, self.representation_constructor(self.state_id)
+            )
             # Make a prediction without training statistics,
             # to avoid training twice.
             with utils.pure_inference_mode():
-                p = self.classifier.predict_one(x)
-            representation.learn_one(x=x, y=y, p=p)
+                p = self.classifier.predict_one(supervised_observation.x)
+                supervised_observation.add_prediction(p, self.state_id)
+            representation.learn_one(supervised_observation)
 
         # We only train the classifier on data from the associated concept.
         if concept_id != self.state_id:
             return self
 
+        # We only train the classifier on data from the associated concept.
+        if supervised_observation.y is None:
+            raise ValueError("Attempting to train on unsupervised observation. ")
+
         # Some classifiers cannot take sample_weight.
         # Try/except to avoid branching
         try:
-            self.classifier.learn_one(x=x, y=y, sample_weight=sample_weight)
+            self.classifier.learn_one(
+                x=supervised_observation.x,
+                y=supervised_observation.y,
+                sample_weight=supervised_observation.sample_weight,
+            )
         except TypeError:
-            self.classifier.learn_one(x=x, y=y)
+            self.classifier.learn_one(x=supervised_observation.x, y=supervised_observation.y)
 
         return self
 
-    def predict_one(self, x: dict, concept_id: int | None = None) -> ClfTarget:
+    def predict_one(
+        self, unsupervised_observation: Observation, force_train_own_representation: bool = False
+    ) -> ClfTarget:
         """Make a prediction using the state classifier.
-        Also trains unsupervised components of the classifier and concept representation."""
-        if concept_id is None:
-            concept_id = self.state_id
-        p = self.classifier.predict_one(x)
+        Also trains unsupervised components of the classifier and concept representation.
+
+        Parameters
+        ----------
+
+        unsupervised_observation: Observation
+            An unsupervised observation, may have a None y.
+            Predictions for the state_id will be added to observation.predictions.
+
+        force_train_own_representation: Bool
+            Default: False
+            Forces the state to train the concept_representation representing data with the current state_id.
+            If false, we train the representation representing the active_state_id associated with the observation.
+        """
+        p = self.classifier.predict_one(unsupervised_observation.x)
+        unsupervised_observation.add_prediction(p, self.state_id)
         if self.train_representation:
-            representation = self.concept_representation.setdefault(concept_id, self.representation_constructor())
-            representation.predict_one(x=x, p=p)
+            concept_id = (
+                unsupervised_observation.active_state_id if not force_train_own_representation else self.state_id
+            )
+            representation = self.concept_representation.setdefault(
+                concept_id, self.representation_constructor(self.state_id)
+            )
+            representation.predict_one(unsupervised_observation)
         return p
 
     def step(self, sample_weight: float = 1.0, is_active: bool = True) -> None:

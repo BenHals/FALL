@@ -4,30 +4,11 @@ from new observations, as this may cause us to learn from multiple distributions
 A buffer is a simple way to wait a number of timesteps before learning. """
 
 from collections import deque
-from typing import Deque, Dict, List, Optional, Tuple
+from typing import Deque, List, Optional, Tuple
 
 from river.base.typing import ClfTarget
 
-
-class Observation:
-    """A container class for a stored observation."""
-
-    def __init__(self, x: dict, y: Optional[ClfTarget], sample_weight: float, seen_at: float) -> None:
-        self.x = x
-        self.y = y
-        self.sample_weight = sample_weight
-        self.seen_at = seen_at
-        # A mappting between state_ids and their predictions for this observation.
-        self.predictions: Dict[int, ClfTarget] = {}
-
-    def add_prediction(self, p: ClfTarget, state_id: int) -> None:
-        self.predictions[state_id] = p
-
-    def __str__(self) -> str:
-        return f"<{self.x}|{self.y}|{self.seen_at}>"
-
-    def __repr__(self) -> str:
-        return str(self)
+from streamselect.utils import Observation
 
 
 class ObservationBuffer:
@@ -47,13 +28,21 @@ class ObservationBuffer:
         self.stable_window: Deque[Observation] = deque(maxlen=window_size)  # pylint: disable=unsubscriptable-object
 
     def buffer_data(
-        self, x: dict, y: Optional[ClfTarget], sample_weight: float, current_timestamp: float, stable_timestamp: float
+        self,
+        x: dict,
+        y: Optional[ClfTarget],
+        current_timestamp: float,
+        stable_timestamp: float,
+        active_state_id: int,
+        sample_weight: float = 1.0,
     ) -> List[Observation]:
         """Add x and y to the buffer.
         y is optional, and should be set to None if not known.
         Current_timestamp is a float corresponding to the current timestamp (could be the data index).
         Returns all observations released from the buffer."""
-        return self.add_observation(Observation(x, y, sample_weight, current_timestamp), stable_timestamp)
+        return self.add_observation(
+            Observation(x, y, current_timestamp, active_state_id, sample_weight), stable_timestamp
+        )
 
     def add_observation(self, observation: Observation, stable_timestamp: float) -> List[Observation]:
         """Add a new observation.
@@ -173,11 +162,15 @@ class SupervisedUnsupervisedBuffer:
             self.unsupervised_active_timestamp - self.unsupervised_buffer_timeout,
         )
 
-    def buffer_unsupervised(self, x: dict, current_timestamp: float = -1.0, sample_weight: float = 1.0) -> None:
+    def buffer_unsupervised(
+        self, x: dict, active_state_id: int, current_timestamp: float = -1.0, sample_weight: float = 1.0
+    ) -> Observation:
         """Add an unsupervised observation.
         Current timestamp is -1.0 if unknown, in which case we simply increment by one.
         This is fine when data comes in at regular intervals.
-        Otherwise, we set the timestamp to current_timestamp."""
+        Otherwise, we set the timestamp to current_timestamp.
+
+        Returns the buffered data as an observation."""
         if current_timestamp == -1.0:
             self.unsupervised_active_timestamp += 1.0
         else:
@@ -190,16 +183,20 @@ class SupervisedUnsupervisedBuffer:
             sample_weight=sample_weight,
             current_timestamp=self.unsupervised_active_timestamp,
             stable_timestamp=stable_timestamp,
+            active_state_id=active_state_id,
         )
 
+        return self.unsupervised_buffer.active_window[-1]
+
     def buffer_supervised(
-        self, x: dict, y: ClfTarget, current_timestamp: float = -1.0, sample_weight: float = 1.0
-    ) -> None:
+        self, x: dict, y: ClfTarget, active_state_id: int, current_timestamp: float = -1.0, sample_weight: float = 1.0
+    ) -> Observation:
         """Add a supervised observation.
         Current timestamp is -1.0 if unknown, in which case we simply increment by one.
         This is fine when data comes in at regular intervals, but may not be accurate with missing
         or delayed data.
-        Otherwise, we set the timestamp to current_timestamp."""
+        Otherwise, we set the timestamp to current_timestamp.
+        Returns the buffered data as an observation."""
         if current_timestamp == -1.0:
             self.supervised_active_timestamp += 1.0
         else:
@@ -212,7 +209,10 @@ class SupervisedUnsupervisedBuffer:
             sample_weight=sample_weight,
             current_timestamp=self.supervised_active_timestamp,
             stable_timestamp=stable_timestamp,
+            active_state_id=active_state_id,
         )
+
+        return self.supervised_buffer.active_window[-1]
 
     def collect_stable_unsupervised(self) -> List[Observation]:
         """Get collected stable unsupervised data, and clear it from cache."""
