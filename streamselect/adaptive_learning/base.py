@@ -449,16 +449,19 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
     def get_adapted_state(self, state_relevance: Dict[int, float]) -> State:
         """Returns a new state adapted to current conditions, based on estimated relevance
-        of previous states."""
+        of previous states. Adds the state to the repository."""
         max_state_id, _ = max(state_relevance.items(), key=lambda x: x[1])
         if max_state_id in [-1, self.active_state_id]:
-            new_state = self.repository.add_next_state()
+            # We skip memory management so that we may use states while processing
+            # the transition. We manually call apply_memory_management at the end of
+            # the transition to handle this after the transition.
+            new_state = self.repository.add_next_state(skip_memory_management=True)
         else:
             new_state = self.repository.states[max_state_id]
         return new_state
 
     def transition_active_state(self, next_active_state: State, in_drift: bool, in_warning: bool) -> None:
-        """Transition to a new active state."""
+        """Transition to an active state in the repository."""
         current_active_state = self.get_active_state()
         self.active_state_id = next_active_state.state_id
         self.repository.add_transition(
@@ -484,6 +487,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             for s_id in representation_ids
         }
         self.drift_detector.reset()
+        self.repository.apply_memory_management()
 
 
 class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):

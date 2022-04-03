@@ -10,5 +10,6 @@ maintaining an active state which is relevant to current streaming conditions.
 """
 
 from .base import BaseAdaptiveLearner, BaseBufferedAdaptiveLearner
+from .discrete_segment import DiscreteSegmentAL
 
-__all__ = ["BaseAdaptiveLearner", "BaseBufferedAdaptiveLearner"]
+__all__ = ["BaseAdaptiveLearner", "BaseBufferedAdaptiveLearner", "DiscreteSegmentAL"]

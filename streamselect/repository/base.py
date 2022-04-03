@@ -82,24 +82,48 @@ class Repository:  # pylint: disable=too-few-public-methods
             self.classifier_constructor(), self.representation_constructor, state_id, self.train_representation
         )
 
-    def add_next_state(self) -> State:
+    def add_next_state(self, skip_memory_management: bool = False) -> State:
         """Create and add a state with the next valid ID.
-        Return this state. Can only use if classifier constructor is set."""
+        Return this state. Can only use if classifier constructor is set.
+        Parameters
+        ----------
+
+        skip_memory_management: bool
+            Default: False
+            Whether or not to skip memory management.
+            Skipping may be useful to aid in transitioning away from the prev state,
+            but apply_memory_management should be manually called after this is done."""
 
         state = self.make_state(self.next_id)
-        self.add(state)
+        self.add(state, skip_memory_management=skip_memory_management)
         self.next_id += 1
 
         return state
 
-    def add(self, new_state: State) -> None:
+    def add(self, new_state: State, skip_memory_management: bool = False) -> None:
         """Add a new state to the repository.
-        Throws an error if the state already exists."""
+        Throws an error if the state already exists.
+        Parameters
+        ----------
+        new_state: State
+            The new state to add.
+
+        skip_memory_management: bool
+            Default: False
+            Whether or not to skip memory management.
+            Skipping may be useful to aid in transitioning away from the prev state,
+            but apply_memory_management should be manually called after this is done.
+        """
         if new_state.state_id in self.states:
             raise ValueError(f"State with id {new_state.state_id} already exists.")
 
         self.states[new_state.state_id] = new_state
 
+        if not skip_memory_management:
+            self.apply_memory_management()
+
+    def apply_memory_management(self) -> None:
+        """Apply memory management to avoid storing more than self.max_size states."""
         while len(self.states) > self.max_size and self.max_size != -1:
             self.memory_management_deletion()
 
