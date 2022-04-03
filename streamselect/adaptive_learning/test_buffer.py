@@ -1,5 +1,4 @@
 """ Testing the buffer """
-
 import numpy as np
 from river.stream import iter_array, simulate_qa
 
@@ -247,7 +246,7 @@ def test_observation_buffer_drift_reset() -> None:
     assert [o.y for o in buffer.stable_window] == [0, 1, 1]
     assert [o.y for o in buffer.buffer] == [0, 1]
 
-    buffer.reset_on_drift(timesteps[-1])
+    buffer.reset_on_drift(1, timesteps[-1])
     assert len(buffer.buffer) == 0
     assert len(buffer.active_window) == 0
     assert len(buffer.stable_window) == 0
@@ -270,7 +269,7 @@ def test_observation_buffer_drift_reset() -> None:
     assert [o.y for o in buffer.buffer] == [0, 1]
 
     drift_timestamp = timesteps[-2]
-    buffer.reset_on_drift(drift_timestamp)
+    buffer.reset_on_drift(1, drift_timestamp)
     assert [o.y for o in buffer.active_window] == [1]
     assert all(o.seen_at > drift_timestamp for o in buffer.active_window)
     assert not [o.y for o in buffer.stable_window]
@@ -296,7 +295,7 @@ def test_observation_buffer_drift_reset() -> None:
     assert [o.y for o in buffer.buffer] == [0, 1]
 
     drift_timestamp = timesteps[0]
-    buffer.reset_on_drift(drift_timestamp)
+    buffer.reset_on_drift(1, drift_timestamp)
     assert [o.y for o in buffer.active_window] == [1, 0, 1]
     assert all(o.seen_at > drift_timestamp for o in buffer.active_window)
     assert [o.y for o in buffer.stable_window] == [1, 1]
@@ -616,17 +615,27 @@ def test_supervised_unsupervised_buffer_reset_supervised() -> None:
     assert len(buffer.unsupervised_buffer.stable_window) == window_size
     assert len(buffer.unsupervised_buffer.active_window) == window_size
     assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
-    buffer.reset_on_drift()
+    buffer.reset_on_drift(
+        1,
+    )
 
-    # with the reset, we should keep the active window, since that is how we have selected the
-    # new active state so it should be valid.
-    # But we should delete items in the buffer and stable window which are not in the active window.
-    assert len(buffer.supervised_buffer.stable_window) == 0
-    assert len(buffer.supervised_buffer.active_window) == window_size
-    assert len(buffer.supervised_buffer.buffer) == 2
-    assert len(buffer.unsupervised_buffer.stable_window) == 0
-    assert len(buffer.unsupervised_buffer.active_window) == window_size
-    assert len(buffer.unsupervised_buffer.buffer) == 2
+    # # with the reset, we should keep the active window, since that is how we have selected the
+    # # new active state so it should be valid.
+    # # But we should delete items in the buffer and stable window which are not in the active window.
+    if buffer.keep_active_window_on_reset:
+        assert len(buffer.supervised_buffer.stable_window) == 0
+        assert len(buffer.supervised_buffer.active_window) == window_size
+        assert len(buffer.supervised_buffer.buffer) == 2
+        assert len(buffer.unsupervised_buffer.stable_window) == 0
+        assert len(buffer.unsupervised_buffer.active_window) == window_size
+        assert len(buffer.unsupervised_buffer.buffer) == 2
+    else:
+        assert len(buffer.supervised_buffer.stable_window) == 0
+        assert len(buffer.supervised_buffer.active_window) == 0
+        assert len(buffer.supervised_buffer.buffer) == 0
+        assert len(buffer.unsupervised_buffer.stable_window) == 0
+        assert len(buffer.unsupervised_buffer.active_window) == 0
+        assert len(buffer.unsupervised_buffer.buffer) == 0
 
 
 def test_supervised_unsupervised_buffer_reset_supervised_2() -> None:
@@ -662,18 +671,28 @@ def test_supervised_unsupervised_buffer_reset_supervised_2() -> None:
     assert len(buffer.unsupervised_buffer.stable_window) == window_size
     assert len(buffer.unsupervised_buffer.active_window) == window_size
     assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
-    buffer.reset_on_drift()
+    buffer.reset_on_drift(
+        1,
+    )
 
     # with the reset, we should keep the active window, since that is how we have selected the
     # new active state so it should be valid.
     # But we should delete items in the buffer and stable window which are not in the active window.
     # In this case, the stable window shares the first element with the active window
-    assert len(buffer.supervised_buffer.stable_window) == 1
-    assert len(buffer.supervised_buffer.active_window) == window_size
-    assert len(buffer.supervised_buffer.buffer) == 1
-    assert len(buffer.unsupervised_buffer.stable_window) == 1
-    assert len(buffer.unsupervised_buffer.active_window) == window_size
-    assert len(buffer.unsupervised_buffer.buffer) == 1
+    if buffer.keep_active_window_on_reset:
+        assert len(buffer.supervised_buffer.stable_window) == 1
+        assert len(buffer.supervised_buffer.active_window) == window_size
+        assert len(buffer.supervised_buffer.buffer) == 1
+        assert len(buffer.unsupervised_buffer.stable_window) == 1
+        assert len(buffer.unsupervised_buffer.active_window) == window_size
+        assert len(buffer.unsupervised_buffer.buffer) == 1
+    else:
+        assert len(buffer.supervised_buffer.stable_window) == 0
+        assert len(buffer.supervised_buffer.active_window) == 0
+        assert len(buffer.supervised_buffer.buffer) == 0
+        assert len(buffer.unsupervised_buffer.stable_window) == 0
+        assert len(buffer.unsupervised_buffer.active_window) == 0
+        assert len(buffer.unsupervised_buffer.buffer) == 0
 
 
 def test_supervised_unsupervised_buffer_reset_supervised_3() -> None:
@@ -713,7 +732,9 @@ def test_supervised_unsupervised_buffer_reset_supervised_3() -> None:
     assert len(buffer.unsupervised_buffer.stable_window) == 1
     assert len(buffer.unsupervised_buffer.active_window) == window_size
     assert len(buffer.unsupervised_buffer.buffer) == 3
-    buffer.reset_on_drift()
+    buffer.reset_on_drift(
+        1,
+    )
 
     # with the reset, we should keep the active window, since that is how we have selected the
     # new active state so it should be valid.
@@ -721,12 +742,20 @@ def test_supervised_unsupervised_buffer_reset_supervised_3() -> None:
     # In this case, the stable window shares the first element with the active window
     # In this case, since we are basing drift on the supervised data, the drift timestep is set to 0
     # this means all data occured after the drift, so should all be retained.
-    assert len(buffer.supervised_buffer.stable_window) == 1
-    assert len(buffer.supervised_buffer.active_window) == window_size
-    assert len(buffer.supervised_buffer.buffer) == buffer_timeout
-    assert len(buffer.unsupervised_buffer.stable_window) == 1
-    assert len(buffer.unsupervised_buffer.active_window) == window_size
-    assert len(buffer.unsupervised_buffer.buffer) == 3
+    if buffer.keep_active_window_on_reset:
+        assert len(buffer.supervised_buffer.stable_window) == 1
+        assert len(buffer.supervised_buffer.active_window) == window_size
+        assert len(buffer.supervised_buffer.buffer) == buffer_timeout
+        assert len(buffer.unsupervised_buffer.stable_window) == 1
+        assert len(buffer.unsupervised_buffer.active_window) == window_size
+        assert len(buffer.unsupervised_buffer.buffer) == 3
+    else:
+        assert len(buffer.supervised_buffer.stable_window) == 0
+        assert len(buffer.supervised_buffer.active_window) == 0
+        assert len(buffer.supervised_buffer.buffer) == 0
+        assert len(buffer.unsupervised_buffer.stable_window) == 0
+        assert len(buffer.unsupervised_buffer.active_window) == 2
+        assert len(buffer.unsupervised_buffer.buffer) == 2
 
 
 def test_supervised_unsupervised_buffer_reset_unsupervised() -> None:
@@ -767,7 +796,9 @@ def test_supervised_unsupervised_buffer_reset_unsupervised() -> None:
     assert len(buffer.unsupervised_buffer.stable_window) == window_size
     assert len(buffer.unsupervised_buffer.active_window) == window_size
     assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
-    buffer.reset_on_drift()
+    buffer.reset_on_drift(
+        1,
+    )
 
     # with the reset, we should keep the active window, since that is how we have selected the
     # new active state so it should be valid.
@@ -775,12 +806,20 @@ def test_supervised_unsupervised_buffer_reset_unsupervised() -> None:
     # In this case, the stable window shares the first element with the active window
     # In this case, since we are basing drift on the unsupervised data, the drift timestep is set to 1
     # this means all supervised data occured before the drift, so should all be discarded.
-    assert len(buffer.supervised_buffer.stable_window) == 0
-    assert len(buffer.supervised_buffer.active_window) == 0
-    assert len(buffer.supervised_buffer.buffer) == 0
-    assert len(buffer.unsupervised_buffer.stable_window) == 1
-    assert len(buffer.unsupervised_buffer.active_window) == window_size
-    assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
+    if buffer.keep_active_window_on_reset:
+        assert len(buffer.supervised_buffer.stable_window) == 0
+        assert len(buffer.supervised_buffer.active_window) == 0
+        assert len(buffer.supervised_buffer.buffer) == 0
+        assert len(buffer.unsupervised_buffer.stable_window) == 1
+        assert len(buffer.unsupervised_buffer.active_window) == window_size
+        assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
+    else:
+        assert len(buffer.supervised_buffer.stable_window) == 0
+        assert len(buffer.supervised_buffer.active_window) == 0
+        assert len(buffer.supervised_buffer.buffer) == 0
+        assert len(buffer.unsupervised_buffer.stable_window) == 0
+        assert len(buffer.unsupervised_buffer.active_window) == 0
+        assert len(buffer.unsupervised_buffer.buffer) == 0
 
 
 def test_supervised_unsupervised_buffer_reset_independent() -> None:
@@ -821,7 +860,9 @@ def test_supervised_unsupervised_buffer_reset_independent() -> None:
     assert len(buffer.unsupervised_buffer.stable_window) == window_size
     assert len(buffer.unsupervised_buffer.active_window) == window_size
     assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
-    buffer.reset_on_drift()
+    buffer.reset_on_drift(
+        1,
+    )
 
     # with the reset, we should keep the active window, since that is how we have selected the
     # new active state so it should be valid.
@@ -829,12 +870,20 @@ def test_supervised_unsupervised_buffer_reset_independent() -> None:
     # In this case, the stable window shares the first element with the active window
     # In this case, since we are basing drift idenpendently, each should act as in the supervised or unsupervised case
     # independentely.
-    assert len(buffer.supervised_buffer.stable_window) == 1
-    assert len(buffer.supervised_buffer.active_window) == window_size
-    assert len(buffer.supervised_buffer.buffer) == buffer_timeout
-    assert len(buffer.unsupervised_buffer.stable_window) == 1
-    assert len(buffer.unsupervised_buffer.active_window) == window_size
-    assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
+    if buffer.keep_active_window_on_reset:
+        assert len(buffer.supervised_buffer.stable_window) == 1
+        assert len(buffer.supervised_buffer.active_window) == window_size
+        assert len(buffer.supervised_buffer.buffer) == buffer_timeout
+        assert len(buffer.unsupervised_buffer.stable_window) == 1
+        assert len(buffer.unsupervised_buffer.active_window) == window_size
+        assert len(buffer.unsupervised_buffer.buffer) == buffer_timeout
+    else:
+        assert len(buffer.supervised_buffer.stable_window) == 0
+        assert len(buffer.supervised_buffer.active_window) == 0
+        assert len(buffer.supervised_buffer.buffer) == 0
+        assert len(buffer.unsupervised_buffer.stable_window) == 0
+        assert len(buffer.unsupervised_buffer.active_window) == 0
+        assert len(buffer.unsupervised_buffer.buffer) == 0
 
 
 # %%

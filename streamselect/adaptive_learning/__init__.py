@@ -9,6 +9,6 @@ maintaining an active state which is relevant to current streaming conditions.
 3) Construct the optimal active state to handle new observations (Concept adaptation.)
 """
 
-from .base import BaseAdaptiveLearner
+from .base import BaseAdaptiveLearner, BaseBufferedAdaptiveLearner
 
-__all__ = ["BaseAdaptiveLearner"]
+__all__ = ["BaseAdaptiveLearner", "BaseBufferedAdaptiveLearner"]
