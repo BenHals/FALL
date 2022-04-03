@@ -1,6 +1,9 @@
 from typing import Dict, Optional
 
+from river.base import DriftDetector
 from river.base.typing import ClfTarget
+
+# from river.drift import ADWIN, DDM, EDDM
 
 
 class Observation:
@@ -25,3 +28,11 @@ class Observation:
 
     def __repr__(self) -> str:
         return str(self)
+
+
+def get_drift_detector_estimate(detector: DriftDetector) -> float:
+    """Extract the mean estimate of a drift detector."""
+    if hasattr(detector, "estimation"):
+        return detector.estimation  # type: ignore
+
+    raise ValueError("Cannot get estimate from detector. Either use a different detector or use the 'any' mode. ")

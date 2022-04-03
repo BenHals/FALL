@@ -12,7 +12,7 @@ from streamselect.adaptive_learning.buffer import SupervisedUnsupervisedBuffer
 from streamselect.concept_representations import ConceptRepresentation
 from streamselect.repository import Repository, RepresentationComparer, ValuationPolicy
 from streamselect.states import State
-from streamselect.utils import Observation
+from streamselect.utils import Observation, get_drift_detector_estimate
 
 
 class PerformanceMonitor:
@@ -57,6 +57,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
+        drift_detection_mode: str = "any",
     ) -> None:
         """
         Parameters
@@ -118,6 +119,13 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             transition_reset: The state is reset only when a transition occurs
             int>0: timed_reset, the state is reset periodically every int timesteps.
 
+        drift_detection_mode: str["any", "lower", "higher]
+            Default: "any"
+            How change is interpreted as concept drift.
+            "any": Any significant change in relevance is detected as drift.
+            "lower": Significant changes where the new value is lower than the mean is detected.
+            "higher": Significant changes where the new value is higher than the mean is detected.
+
         """
         self.representation_update_period = representation_update_period
         self.max_size = max_size
@@ -136,6 +144,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.construct_pair_representations = construct_pair_representations
         self.prediction_mode = prediction_mode
         self.background_state_mode = background_state_mode
+        self.drift_detection_mode = drift_detection_mode
 
         # Validation
         if self.prediction_mode != "all" and self.construct_pair_representations:
@@ -367,6 +376,16 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         state_relevance = self.representation_comparer.get_state_rep_similarity(state, state_representation)
 
         in_drift, in_warning = drift_detector.update(state_relevance)  # type: ignore
+
+        # turn off detections which do not match mode
+        if self.drift_detection_mode == "lower":
+            if state_relevance >= get_drift_detector_estimate(drift_detector):
+                in_drift = False
+                in_warning = False
+        if self.drift_detection_mode == "higher":
+            if state_relevance <= get_drift_detector_estimate(drift_detector):
+                in_drift = False
+                in_warning = False
 
         return in_drift, in_warning, state_relevance
 
