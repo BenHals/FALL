@@ -33,6 +33,7 @@ class State:  # pylint: disable=too-few-public-methods
         self.seen_weight = 0.0
         self.active_seen_weight = 0.0
         self.weight_since_last_active = 0.0
+        self.last_trained_active_timestep = -1.0
 
     def learn_one(self, supervised_observation: Observation, force_train_classifier: bool = False) -> State:
         """Train the classifier and concept representation.
@@ -86,6 +87,7 @@ class State:  # pylint: disable=too-few-public-methods
         except TypeError:
             self.classifier.learn_one(x=supervised_observation.x, y=supervised_observation.y)
 
+        self.last_trained_active_timestep = supervised_observation.seen_at
         return self
 
     def predict_one(
