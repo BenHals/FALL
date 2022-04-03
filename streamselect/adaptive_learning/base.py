@@ -1,6 +1,7 @@
 """ Base adaptive learning class. """
 import abc
 from collections import deque
+from copy import deepcopy
 from typing import Callable, Deque, Dict, Optional, Set, Tuple, Union
 
 from river.base import Classifier, DriftDetector
@@ -430,8 +431,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         max_state_id, _ = max(state_relevance.items(), key=lambda x: x[1])
         if max_state_id == -1 and self.background_state:
             new_state = self.repository.add_next_state()
-            new_state.classifier = self.background_state.classifier
-            new_state.concept_representation = self.background_state.concept_representation
+            new_state.classifier = deepcopy(self.background_state.classifier)
+            new_state.concept_representation = deepcopy(self.background_state.concept_representation)
         else:
             new_state = self.repository.states[max_state_id]
         return new_state
@@ -462,6 +463,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             else self.active_representation_constructor(s_id)
             for s_id in representation_ids
         }
+        self.drift_detector.reset()
 
 
 class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):

@@ -69,6 +69,26 @@ def test_init() -> None:
     assert not al_classifier.background_state_active_representation
     assert not al_classifier.background_state_detector
 
+    # Test that states get the correct properties
+    window_size = 50
+    update_period = 50
+    al_classifier = BaseAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        window_size=window_size,
+        representation_update_period=update_period,
+    )
+
+    # Assert background state was constructed
+    assert isinstance(al_classifier.get_active_state().classifier, HoeffdingTreeClassifier)
+    assert isinstance(al_classifier.get_active_state().get_self_representation(), ErrorRateRepresentation)
+    assert al_classifier.get_active_state().get_self_representation().window_size == window_size
+    assert al_classifier.get_active_state().get_self_representation().update_period == update_period
+    # Check that states are correctly made as the concept mode
+    assert al_classifier.get_active_state().get_self_representation().mode == "concept"
+
 
 def test_base_predictions() -> None:
     """Test predictions are the same as made by a base classifier."""
@@ -182,12 +202,11 @@ def test_drift_detection() -> None:
 
         assert baseline_detector.total == al_classifier.drift_detector.total  # type: ignore
 
-        if in_drift:
-            found_drift = True
-            break
-
+        # We shouldn't find a drift in stable data
+        assert not found_drift
         assert not al_classifier.performance_monitor.in_drift
         assert not al_classifier.performance_monitor.made_transition
+
     if not found_drift:
         for t, (x, y) in enumerate(dataset_1.take(500), start=500):
             ob = Observation(x=x, y=y, seen_at=t, active_state_id=baseline_state.state_id)
@@ -212,7 +231,126 @@ def test_drift_detection() -> None:
             assert not al_classifier.performance_monitor.in_drift
             assert not al_classifier.performance_monitor.made_transition
 
-    assert al_classifier.performance_monitor.in_drift == found_drift
+    # We should have found a drift when the concept changed
+    assert al_classifier.performance_monitor.in_drift
     # background should have been reset since we are using "drift_reset"
     assert al_classifier.background_state is not None
     assert al_classifier.background_state.seen_weight == 0.0
+    assert al_classifier.get_active_state().seen_weight == 0.0
+    assert len(al_classifier.repository.states) == 2
+    assert al_classifier.active_state_id == 1
+
+
+def test_drift_transition() -> None:
+    """Test data after a drift is handled correctly."""
+    al_classifier = BaseAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+    )
+
+    baseline_c1_state = State(
+        HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id, mode="concept"), state_id=-1
+    )
+    baseline_c1_active_representation = ErrorRateRepresentation(1, baseline_c1_state.state_id)
+    baseline_c1_comparer = AbsoluteValueComparer()
+    baseline_c1_detector = ADWIN()
+
+    dataset_1 = synth.STAGGER(classification_function=0, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=1, seed=0)
+    found_drift = False
+    drift_point = None
+    # Concept 1
+    for t, (x, y) in enumerate(dataset_1.take(500)):
+        ob = Observation(x=x, y=y, seen_at=t, active_state_id=baseline_c1_state.state_id)
+        al_classifier.predict_one(x)
+        baseline_c1_state.predict_one(ob, force_train_own_representation=True)
+        baseline_c1_active_representation.predict_one(ob)
+
+        al_classifier.learn_one(x, y)
+        baseline_c1_state.learn_one(ob, force_train_classifier=True)
+        baseline_c1_active_representation.learn_one(ob)
+        baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
+            baseline_c1_state, baseline_c1_active_representation
+        )
+        in_drift, _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
+        assert not found_drift
+        assert not al_classifier.performance_monitor.in_drift
+        assert not al_classifier.performance_monitor.made_transition
+
+    # Concept 2
+    for t, (x, y) in enumerate(dataset_2.take(500), start=500):
+        ob = Observation(x=x, y=y, seen_at=t, active_state_id=baseline_c1_state.state_id)
+        al_classifier.predict_one(x)
+        baseline_c1_state.predict_one(ob, force_train_own_representation=True)
+        baseline_c1_active_representation.predict_one(ob)
+
+        al_classifier.learn_one(x, y)
+        baseline_c1_state.learn_one(ob, force_train_classifier=True)
+        baseline_c1_active_representation.learn_one(ob)
+
+        baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
+            baseline_c1_state, baseline_c1_active_representation
+        )
+        assert baseline_c1_relevance == al_classifier.performance_monitor.active_state_relevance
+        in_drift, _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
+
+        if in_drift:
+            found_drift = True
+            drift_point = t
+            break
+
+        assert not al_classifier.performance_monitor.in_drift
+        assert not al_classifier.performance_monitor.made_transition
+
+    # We should have found a drift when the concept changed
+    assert al_classifier.performance_monitor.in_drift
+    # background should have been reset since we are using "drift_reset"
+    assert al_classifier.background_state is not None
+    assert al_classifier.background_state.seen_weight == 0.0
+    assert al_classifier.get_active_state().seen_weight == 0.0
+    assert len(al_classifier.repository.states) == 2
+    assert al_classifier.active_state_id == 1
+    assert drift_point
+
+    # Test that after the transition, we are properly using the new state not the old state.
+    baseline_c2_state = State(
+        HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id, mode="concept"), state_id=-2
+    )
+    baseline_c2_active_representation = ErrorRateRepresentation(1, baseline_c2_state.state_id)
+    baseline_c2_comparer = AbsoluteValueComparer()
+    baseline_c2_detector = ADWIN()
+    # Concept 2
+    for t, (x, y) in enumerate(dataset_2.take(500), start=500 + drift_point):
+        ob = Observation(x=x, y=y, seen_at=t, active_state_id=baseline_c2_state.state_id)
+        assert al_classifier.active_state_id == 1
+        p_c2 = al_classifier.predict_one(x)
+        bp_c2 = baseline_c2_state.predict_one(ob, force_train_own_representation=True)
+        # the adaptive learner should give the same results as a new classifier trained on the new concept.
+        assert p_c2 == bp_c2
+        # The original concept 1 state should be stored, and give the same predictions as the baseline trained
+        # only on that data.
+        p_c1 = al_classifier.repository.states[0].predict_one(ob)
+        bp_c1 = baseline_c1_state.predict_one(ob)
+        assert p_c1 == bp_c1
+        baseline_c2_active_representation.predict_one(ob)
+
+        al_classifier.learn_one(x, y)
+        baseline_c2_state.learn_one(ob, force_train_classifier=True)
+        baseline_c2_active_representation.learn_one(ob)
+
+        baseline_c2_relevance = baseline_c2_comparer.get_state_rep_similarity(
+            baseline_c2_state, baseline_c2_active_representation
+        )
+        assert baseline_c2_relevance == al_classifier.performance_monitor.active_state_relevance
+        in_drift, _ = baseline_c2_detector.update(baseline_c2_relevance)  # type: ignore
+
+        if in_drift:
+            found_drift = True
+            drift_point = t
+            break
+
+        assert not al_classifier.performance_monitor.in_drift
+        assert not al_classifier.performance_monitor.made_transition

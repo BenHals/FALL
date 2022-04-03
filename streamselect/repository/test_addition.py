@@ -4,6 +4,23 @@ from streamselect.concept_representations import ErrorRateRepresentation
 from streamselect.repository import Repository
 
 
+def test_make_state() -> None:
+    """Test the make state function."""
+    repo = Repository(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+    )
+    s1 = repo.make_state(1)
+    s2 = repo.make_state(2)
+    s3 = repo.make_state(-1)
+    assert s1 is not s2
+    assert s1.classifier is not s2.classifier
+    assert s1.concept_representation is not s2.concept_representation
+    assert s2 is not s3
+    assert s2.classifier is not s3.classifier
+    assert s2.concept_representation is not s3.concept_representation
+
+
 def test_add_next_state() -> None:
     """Test automatic repo state construction."""
     repo = Repository(
