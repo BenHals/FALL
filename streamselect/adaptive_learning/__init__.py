@@ -9,7 +9,19 @@ maintaining an active state which is relevant to current streaming conditions.
 3) Construct the optimal active state to handle new observations (Concept adaptation.)
 """
 
-from .base import BaseAdaptiveLearner, BaseBufferedAdaptiveLearner
-from .discrete_segment import DiscreteSegmentAL
+from .base import (
+    BaseAdaptiveLearner,
+    BaseBufferedAdaptiveLearner,
+    get_constant_max_buffer_scheduler,
+    get_increasing_buffer_scheduler,
+)
+from .discrete_segment import BufferedDiscreteSegmentAL, DiscreteSegmentAL
 
-__all__ = ["BaseAdaptiveLearner", "BaseBufferedAdaptiveLearner", "DiscreteSegmentAL"]
+__all__ = [
+    "BaseAdaptiveLearner",
+    "BaseBufferedAdaptiveLearner",
+    "DiscreteSegmentAL",
+    "BufferedDiscreteSegmentAL",
+    "get_constant_max_buffer_scheduler",
+    "get_increasing_buffer_scheduler",
+]

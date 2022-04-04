@@ -40,6 +40,15 @@ class PerformanceMonitor:
         self.background_state_relevance = -1
         self.last_observation = None
 
+    def buffer_step_reset(self, initial_active_state_id: int) -> None:
+        """Reset monitoring on taking a new step in a buffered classifier
+        when no new stable data is available."""
+        self.in_drift = False
+        self.in_warning = False
+        self.made_transition = False
+        self.background_in_drift = False
+        self.background_in_warning = False
+
 
 class BaseAdaptiveLearner(Classifier, abc.ABC):
     """A base adaptive learning class."""
@@ -490,6 +499,32 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.repository.apply_memory_management()
 
 
+def get_constant_max_buffer_scheduler() -> Callable[[float, State, Optional[Observation]], float]:
+    """Returns a buffer timeout scheduler which always
+    sets the buffer_timeout to be max."""
+
+    def get_buffer_timeout(
+        buffer_timeout_max: float, active_state: State, observation: Optional[Observation] = None
+    ) -> float:
+        return buffer_timeout_max
+
+    return get_buffer_timeout
+
+
+def get_increasing_buffer_scheduler(
+    increase_rate: float = 1.0,
+) -> Callable[[float, State, Optional[Observation]], float]:
+    """Returns a buffer timeout scheduler which always
+    sets the buffer_timeout to be max."""
+
+    def get_buffer_timeout(
+        buffer_timeout_max: float, active_state: State, observation: Optional[Observation] = None
+    ) -> float:
+        return min(round(active_state.seen_weight * increase_rate), buffer_timeout_max)
+
+    return get_buffer_timeout
+
+
 class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
     """A base adaptive learning class, using a buffer to stabilize observations."""
 
@@ -504,11 +539,14 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         train_representation: bool = True,
         window_size: int = 1,
-        buffer_timeout: float = 0.0,
+        buffer_timeout_max: float = 0.0,
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
         drift_detection_mode: str = "any",
+        buffer_timeout_scheduler: Callable[
+            [float, State, Optional[Observation]], float
+        ] = get_increasing_buffer_scheduler(1.0),
     ) -> None:
         """
         Parameters
@@ -547,13 +585,20 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         window_size: int
             The number of observations to construct a concept representation over.
 
-        buffer_timeout: float
-            The base number of timesteps to buffer new data before training.
+        buffer_timeout_max: float
+            The max number of timesteps to buffer new data before training.
 
         construct_pair_representations: bool
             Whether or not to construct a representation for each concept, classifier pair.
             Such a pair R_{ij} represents data drawn from concept j classified by state i.
             If False, only constructs R_{ii}, which is fine for many adaptive learning systems.
+
+        buffer_timeout_scheduler: Callable[[float, State, Observation], float
+            Default: constant_max_buffer_scheduler
+            A function to calculate the current buffer_timeout. The function is passed buffer_timeout_max,
+            the active state and (optinally) the new observation.
+            The default simply returns the buffer_timeout_max. An alternative is the increasing
+            scheduler, which slowly increases the buffer_timeout so that a new classifier may learn.
 
         """
         super().__init__(
@@ -571,7 +616,9 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             background_state_mode,
             drift_detection_mode,
         )
-        self.buffer_timeout = buffer_timeout
+        self.buffer_timeout_max = buffer_timeout_max
+        self.buffer_timeout_scheduler = buffer_timeout_scheduler
+        self.buffer_timeout = self.buffer_timeout_scheduler(self.buffer_timeout_max, self.get_active_state(), None)
 
         # Create a buffer to hold supervised and unsupervised data.
         # Uses a clock based on supervised data, i.e., supervised data is considered stable when it is older
@@ -615,6 +662,8 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         return p
 
     def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0, timestep: Optional[int] = None) -> None:
+        self.performance_monitor.buffer_step_reset(self.active_state_id)
+
         active_state = self.get_active_state()
 
         supervised_observation = Observation(
@@ -628,6 +677,9 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         self.train_components_supervised(supervised_observation)
         self.train_background_supervised(supervised_observation)
 
+        self.set_buffer_timeout(
+            self.buffer_timeout_scheduler(self.buffer_timeout_max, self.get_active_state(), supervised_observation)
+        )
         self.buffer.buffer_supervised(
             x,
             y,
