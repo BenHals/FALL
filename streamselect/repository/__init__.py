@@ -8,6 +8,8 @@ The code in this module handles the mechanisms for representing each state, and 
 constructed states and their memory management.
 """
 
-from .base import Repository
+from .base import Repository, ValuationPolicy
+from .comparers import AbsoluteValueComparer, RepresentationComparer
+from .transition_fsm import TransitionFSM
 
-__all__ = ["Repository"]
+__all__ = ["TransitionFSM", "Repository", "ValuationPolicy", "RepresentationComparer", "AbsoluteValueComparer"]

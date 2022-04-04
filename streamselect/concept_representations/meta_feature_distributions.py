@@ -4,7 +4,7 @@ import abc
 from enum import Enum
 from math import sqrt
 
-from river.stats import Var
+from river.stats import RollingVar, Var
 
 
 class DistributionTypes(Enum):
@@ -26,24 +26,39 @@ class BaseDistribution(abc.ABC):
     def reset_distribution(self) -> None:
         """Reset the variance associated with the meta-feature."""
 
+    @property
+    def mean(self) -> float:
+        """Returns a value describing the distribution."""
+        return 0.0
+
 
 class SingleValueDistribution(BaseDistribution):
     """A distribution containing only the most recent value."""
 
-    def __init__(self) -> None:
+    def __init__(self, memory_size: int = -1) -> None:
         self.distribution_type = DistributionTypes.NA
         self.value: float = 0
 
     def learn_one(self, val: float) -> None:
         self.value = val
 
+    @property
+    def mean(self) -> float:
+        """Returns a value describing the distribution."""
+        return self.value
+
 
 class GaussianDistribution(BaseDistribution):
     """A distribution containing the mean and standard deviation of values."""
 
-    def __init__(self) -> None:
+    def __init__(self, memory_size: int = -1) -> None:
+        self.memory_size = memory_size
         self.distribution_type = DistributionTypes.GAUSSIAN
-        self.var = Var()
+        self.is_rolling = self.memory_size > 0
+        if self.is_rolling:
+            self.var = RollingVar(window_size=memory_size)
+        else:
+            self.var = Var()
 
     def learn_one(self, val: float) -> None:
         self.var.update(val)
@@ -51,7 +66,10 @@ class GaussianDistribution(BaseDistribution):
     @property
     def mean(self) -> float:
         """Gaussian mean."""
-        return self.var.mean.get()
+        if self.is_rolling:
+            # pylint: disable-next=W0212
+            return self.var._rolling_mean.get()  # type: ignore
+        return self.var.mean.get()  # type: ignore
 
     @property
     def stdev(self) -> float:

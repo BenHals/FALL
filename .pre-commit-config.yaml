@@ -14,10 +14,12 @@ repos:
     hooks:
       - id: black
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+    rev: 4.0.1
     hooks:
       - id: flake8
         language_version: python3
+        args:
+          - --ignore=E203, W503
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.1.0
     hooks:
@@ -37,10 +39,10 @@ repos:
         language: system
         types: [python]
         args:
+          - streamselect
           - --max-line-length=120
-          - --ignore-imports=yes
-          - -d duplicate-code
           - --good-names=i,j,x,y,v,p
+          - --disable=duplicate-code
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.9.0
     hooks:
