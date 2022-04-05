@@ -8,6 +8,9 @@ from river.base.typing import ClfTarget
 from river.utils import pure_inference_mode
 
 from streamselect.adaptive_learning.buffer import SupervisedUnsupervisedBuffer
+from streamselect.adaptive_learning.classifier_adaptation import (
+    maximum_relevance_adaptation,
+)
 from streamselect.adaptive_learning.reidentification_schedulers import (
     BaseReidentificationScheduler,
     DriftInfo,
@@ -32,6 +35,7 @@ class PerformanceMonitor:
         self.background_in_warning: bool = False
         self.background_state_relevance: float = -1
         self.last_observation: Optional[Observation] = None
+        self.last_trained_observation: Optional[Observation] = None
         self.last_drift: Optional[DriftInfo] = None
 
     def step_reset(self, initial_active_state_id: int) -> None:
@@ -174,6 +178,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             reidentification_check_schedulers if reidentification_check_schedulers is not None else []
         )
 
+        self.perform_classifier_adaptation = maximum_relevance_adaptation
+
         # Validation
         if self.prediction_mode != "all" and self.construct_pair_representations:
             raise ValueError(
@@ -293,6 +299,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         trainable_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
         for state in trainable_states:
             state.learn_one(supervised_observation)
+        self.performance_monitor.last_trained_observation = supervised_observation
 
         self.step(supervised_observation)
 
@@ -444,14 +451,16 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         in_drift, in_warning = drift_detector.update(state_relevance)  # type: ignore
 
         # turn off detections which do not match mode
-        if self.drift_detection_mode == "lower":
-            if state_relevance >= get_drift_detector_estimate(drift_detector):
-                in_drift = False
-                in_warning = False
-        if self.drift_detection_mode == "higher":
-            if state_relevance <= get_drift_detector_estimate(drift_detector):
-                in_drift = False
-                in_warning = False
+        if in_drift:
+            print(state_relevance, get_drift_detector_estimate(drift_detector))
+            if self.drift_detection_mode == "lower":
+                if state_relevance >= get_drift_detector_estimate(drift_detector):
+                    in_drift = False
+                    in_warning = False
+            if self.drift_detection_mode == "higher":
+                if state_relevance <= get_drift_detector_estimate(drift_detector):
+                    in_drift = False
+                    in_warning = False
 
         return in_drift, in_warning, state_relevance
 
@@ -513,7 +522,13 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def get_adapted_state(self, state_relevance: Dict[int, float], drift: DriftInfo) -> State:
         """Returns a new state adapted to current conditions, based on estimated relevance
         of previous states. Adds the state to the repository."""
-        max_state_id, _ = max(state_relevance.items(), key=lambda x: x[1])
+
+        # Get the adapted state based on state_relevance.
+        # May be a state from the repository, the background state, the active state
+        # or a newly created state.
+        adapted_state = self.perform_classifier_adaptation(
+            self.background_state, self.repository, state_relevance, drift
+        )
 
         # Setup IDs which trigger a new state to be created.
         # If we are just checking reidentification, this is only the background state.
@@ -524,14 +539,18 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         if drift.drift_type == DriftType.DriftDetectorTriggered:
             new_state_triggers.append(self.active_state_id)
 
-        if max_state_id in new_state_triggers:
-            # We skip memory management so that we may use states while processing
+        # if the selected state was in the new_state_triggers, we instead select
+        # a newly constructed state.
+        if adapted_state.state_id in new_state_triggers:
+            adapted_state = self.repository.make_next_state()
+
+        if adapted_state.state_id not in self.repository.states:
+            # We skip memory management for now so that we may use states while processing
             # the transition. We manually call apply_memory_management at the end of
             # the transition to handle this after the transition.
-            new_state = self.repository.add_next_state(skip_memory_management=True)
-        else:
-            new_state = self.repository.states[max_state_id]
-        return new_state
+            self.repository.add(adapted_state, skip_memory_management=True)
+
+        return adapted_state
 
     def transition_active_state(self, next_active_state: State, in_drift: bool, in_warning: bool) -> None:
         """Transition to an active state in the repository."""
@@ -768,6 +787,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
             for state in trained_states:
                 state.learn_one(stable_observation)
+            self.performance_monitor.last_trained_observation = stable_observation
 
         self.step(supervised_observation)
 

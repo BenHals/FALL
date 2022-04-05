@@ -82,6 +82,16 @@ class Repository:  # pylint: disable=too-few-public-methods
             self.classifier_constructor(), self.representation_constructor, state_id, self.train_representation
         )
 
+    def make_next_state(self) -> State:
+        """Construct a new state with the next state_id in the sequence."""
+        if self.classifier_constructor is None or self.representation_constructor is None:
+            raise ValueError("Cannot construct state without setting valid constructors")
+        next_state = State(
+            self.classifier_constructor(), self.representation_constructor, self.next_id, self.train_representation
+        )
+        self.next_id += 1
+        return next_state
+
     def add_next_state(self, skip_memory_management: bool = False) -> State:
         """Create and add a state with the next valid ID.
         Return this state. Can only use if classifier constructor is set.
@@ -94,9 +104,8 @@ class Repository:  # pylint: disable=too-few-public-methods
             Skipping may be useful to aid in transitioning away from the prev state,
             but apply_memory_management should be manually called after this is done."""
 
-        state = self.make_state(self.next_id)
+        state = self.make_next_state()
         self.add(state, skip_memory_management=skip_memory_management)
-        self.next_id += 1
 
         return state
 
