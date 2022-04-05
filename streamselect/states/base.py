@@ -6,8 +6,13 @@ from typing import Callable
 from river import utils
 from river.base import Classifier
 from river.base.typing import ClfTarget
+from river.drift import ADWIN
 
-from streamselect.concept_representations import ConceptRepresentation
+from streamselect.concept_representations import (
+    BaseDistribution,
+    ConceptRepresentation,
+    GaussianDistribution,
+)
 from streamselect.utils import Observation
 
 
@@ -34,6 +39,13 @@ class State:  # pylint: disable=too-few-public-methods
         self.active_seen_weight = 0.0
         self.weight_since_last_active = 0.0
         self.last_trained_active_timestep = -1.0
+
+        # We store a record of this states accuracy while active
+        # (i.e., on observations with an active_state_id set to this states id)
+        # We can use ADWIN for this, to keep the most recent window of
+        # accuracy measurements with the same mean.
+        self.in_concept_accuracy_record = ADWIN()
+        self.in_concept_relevance_distribution: BaseDistribution = GaussianDistribution()
 
     def learn_one(self, supervised_observation: Observation, force_train_classifier: bool = False) -> State:
         """Train the classifier and concept representation.
@@ -87,6 +99,12 @@ class State:  # pylint: disable=too-few-public-methods
         except TypeError:
             self.classifier.learn_one(x=supervised_observation.x, y=supervised_observation.y)
 
+        is_correct = supervised_observation.y == supervised_observation.predictions[self.state_id]
+        self.in_concept_accuracy_record.update(int(is_correct))  # type: ignore
+
+        if supervised_observation.active_state_relevance is not None:
+            self.add_active_state_relevance(supervised_observation.active_state_relevance)
+
         self.last_trained_active_timestep = supervised_observation.seen_at
         return self
 
@@ -127,6 +145,11 @@ class State:  # pylint: disable=too-few-public-methods
         if is_active:
             self.active_seen_weight += sample_weight
             self.weight_since_last_active = 0
+
+    def add_active_state_relevance(self, active_state_relevance: float) -> None:
+        """Update statistics tracking active_state_relevance.
+        Should only be called when an observation is deemed stable."""
+        self.in_concept_relevance_distribution.learn_one(active_state_relevance)
 
     def get_self_representation(self) -> ConceptRepresentation:
         """Get the concept representation using this states classifier,

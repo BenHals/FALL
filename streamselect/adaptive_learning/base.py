@@ -240,6 +240,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         state_predictions = self.repository.get_repository_predictions(unsupervised_observation, self.prediction_mode)
         p = self.combine_predictions(state_predictions)
 
+        unsupervised_observation.is_stable = True
         for state_id, state_p in state_predictions.items():
             unsupervised_observation.add_prediction(state_p, state_id)
 
@@ -288,6 +289,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.train_background_supervised(supervised_observation)
 
         # train supervised representation features and state classifier.
+        supervised_observation.is_stable = True
         trainable_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
         for state in trainable_states:
             state.learn_one(supervised_observation)
@@ -329,6 +331,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.repository.step_all(self.active_state_id)
 
         in_drift, in_warning, active_state_relevance = self.active_state_drift_detection()
+        print(active_state_relevance)
+        observation.add_active_state_relevance(active_state_relevance, self.active_state_id)
+        # if the observation is stable then we already trained on it, so we should add
+        # relevance now.
+        if observation.is_stable:
+            self.get_active_state().add_active_state_relevance(active_state_relevance)
         self.performance_monitor.in_drift = in_drift
         self.performance_monitor.in_warning = in_warning
         self.performance_monitor.active_state_relevance = active_state_relevance
@@ -709,9 +717,12 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         # Train unsupervised representation features
         # In the buffered version, we train on observations coming out
         # of the buffer, rather than new observations.
-        self.buffer.buffer_unsupervised(x, unsupervised_observation.active_state_id, unsupervised_observation.seen_at)
+        unsupervised_observation = self.buffer.buffer_unsupervised(
+            x, unsupervised_observation.active_state_id, unsupervised_observation.seen_at
+        )
         stable_data = self.buffer.collect_stable_unsupervised()
         for stable_observation in stable_data:
+            stable_observation.is_stable = True
             _ = self.repository.get_repository_predictions(stable_observation, self.prediction_mode)
 
         self.train_components_unsupervised(unsupervised_observation)
@@ -731,26 +742,27 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             sample_weight=sample_weight,
             seen_at=timestep if timestep is not None else self.supervised_timestep,
         )
-        # Train recent concept representation for active state
-        self.train_components_supervised(supervised_observation)
-        self.train_background_supervised(supervised_observation)
-
         self.set_buffer_timeout(
             self.buffer_timeout_scheduler(self.buffer_timeout_max, self.get_active_state(), supervised_observation)
         )
-        self.buffer.buffer_supervised(
+        supervised_observation = self.buffer.buffer_supervised(
             x,
             y,
             supervised_observation.active_state_id,
             supervised_observation.seen_at,
             supervised_observation.sample_weight,
         )
+        # Train recent concept representation for active state
+        self.train_components_supervised(supervised_observation)
+        self.train_background_supervised(supervised_observation)
+
         stable_data = self.buffer.collect_stable_supervised()
 
         # train supervised representation features and state classifier.
         # In the buffered version, we train on observations coming out
         # of the buffer, rather than new observations.
         for stable_observation in stable_data:
+            stable_observation.is_stable = True
             if stable_observation.y is None:
                 continue
 
