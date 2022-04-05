@@ -331,7 +331,6 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.repository.step_all(self.active_state_id)
 
         in_drift, in_warning, active_state_relevance = self.active_state_drift_detection()
-        print(active_state_relevance)
         observation.add_active_state_relevance(active_state_relevance, self.active_state_id)
         # if the observation is stable then we already trained on it, so we should add
         # relevance now.

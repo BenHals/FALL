@@ -382,3 +382,75 @@ def test_reidentification_schedule_periodic() -> None:
                 assert prev_drift.drift_timestep == drift.drift_timestep - check_period - 1
             else:
                 assert prev_drift.drift_timestep == drift.drift_timestep - check_period
+
+
+def test_observations_buffered() -> None:
+    """Test that the observations worked on in step are the same as in the buffer"""
+    buffered_classifier_1 = BaseBufferedAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+        buffer_timeout_max=0.0,
+    )
+    buffered_classifier_2 = BaseBufferedAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+        buffer_timeout_max=25,
+    )
+
+    dataset_0 = synth.STAGGER(classification_function=0, seed=0)
+    dataset_1 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=2, seed=0)
+    for dataset in [dataset_0, dataset_1, dataset_2] * 3:
+        for t, (x, y) in enumerate(dataset.take(500)):
+            _ = buffered_classifier_1.predict_one(x, t)
+            _ = buffered_classifier_2.predict_one(x, t)
+            buffered_classifier_1.learn_one(x, y, timestep=t)
+            buffered_classifier_2.learn_one(x, y, timestep=t)
+
+            # Test this by checking the active_state_relevance, which is set in step
+            assert buffered_classifier_1.buffer.supervised_buffer.active_window[-1].active_state_relevance is not None
+            assert buffered_classifier_2.buffer.supervised_buffer.active_window[-1].active_state_relevance is not None
+
+
+def test_is_stable() -> None:
+    """Test that observations are not marked stable before the buffer_timeout."""
+    buffer_timeout = 25
+    buffered_classifier = BaseBufferedAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+        buffer_timeout_max=buffer_timeout,
+        buffer_timeout_scheduler=get_constant_max_buffer_scheduler(),
+    )
+
+    dataset_0 = synth.STAGGER(classification_function=0, seed=0)
+    dataset_1 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=2, seed=0)
+    t = 0
+    for dataset in [dataset_0, dataset_1, dataset_2] * 3:
+        for (x, y) in dataset.take(500):
+            _ = buffered_classifier.predict_one(x, t)
+            buffered_classifier.learn_one(x, y, timestep=t)
+
+            for ob in buffered_classifier.buffer.supervised_buffer.buffer:
+                assert (ob.seen_at <= t - buffer_timeout) or (ob.is_stable is False)
+            for ob in buffered_classifier.buffer.unsupervised_buffer.buffer:
+                assert (ob.seen_at <= t - buffer_timeout) or (ob.is_stable is False)
+            for ob in buffered_classifier.buffer.supervised_buffer.stable_window:
+                assert (ob.seen_at <= t - buffer_timeout) or (ob.is_stable is False)
+            for ob in buffered_classifier.buffer.unsupervised_buffer.stable_window:
+                assert (ob.seen_at <= t - buffer_timeout) or (ob.is_stable is False)
+            for ob in buffered_classifier.supervised_active_window:
+                assert (ob.seen_at <= t - buffer_timeout) or (ob.is_stable is False)
+            for ob in buffered_classifier.unsupervised_active_window:
+                assert (ob.seen_at <= t - buffer_timeout) or (ob.is_stable is False)
+
+            t += 1
