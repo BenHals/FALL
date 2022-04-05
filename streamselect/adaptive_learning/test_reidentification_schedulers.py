@@ -54,7 +54,8 @@ def test_drift_detection_check() -> None:
 
 
 def test_drift_detection_check_transition() -> None:
-    """Test that the drift detection check correctly schedules checks a constant number of timesteps after a real drift.
+    """Test that the drift detection check correctly schedules checks a constant number of timesteps after
+    a real drift.
     Check transitions are correctly handled."""
     check_delay = 50
     real_drifts = [
@@ -104,7 +105,8 @@ def test_drift_detection_check_transition() -> None:
 
 
 def test_drift_detection_check_transition_cancel() -> None:
-    """Test that the drift detection check correctly schedules checks a constant number of timesteps after a real drift.
+    """Test that the drift detection check correctly schedules checks a constant number of timesteps after
+    a real drift.
     Check transitions are correctly handled."""
     check_delay = 50
     real_drifts = [
