@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+import numpy as np
+from pytest import approx
 from river import synth
 from river.drift import ADWIN
 from river.tree import HoeffdingTreeClassifier
@@ -454,3 +456,64 @@ def test_is_stable() -> None:
                 assert (ob.seen_at <= t - buffer_timeout) or (ob.is_stable is False)
 
             t += 1
+
+
+def test_base_predictions_increase_rate() -> None:
+    """Test predictions are the same as made by a base classifier when buffer increase rate is close to zero"""
+    base_classifier = BaseAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+    )
+    buffered_classifier = BaseBufferedAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+        buffer_timeout_max=100,
+        buffer_timeout_scheduler=get_increasing_buffer_scheduler(0.00000001),
+    )
+
+    dataset_0 = synth.STAGGER(classification_function=0, seed=0)
+    dataset_1 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=2, seed=0)
+    for dataset in [dataset_0, dataset_1, dataset_2] * 3:
+        for t, (x, y) in enumerate(dataset.take(500)):
+            p_baseline = base_classifier.predict_one(x, t)
+            p_buffered = buffered_classifier.predict_one(x, t)
+            assert p_baseline == p_buffered
+
+            base_classifier.learn_one(x, y, timestep=t)
+            buffered_classifier.learn_one(x, y, timestep=t)
+
+
+def test_representations() -> None:
+    """Test predictions are the same as made by a base classifier when buffer increase rate is close to zero"""
+    buffered_classifier = BaseBufferedAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+        buffer_timeout_max=100,
+        buffer_timeout_scheduler=get_increasing_buffer_scheduler(1.0),
+    )
+
+    dataset_0 = synth.STAGGER(classification_function=0, seed=0)
+    dataset_1 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=2, seed=0)
+    for dataset in [dataset_0, dataset_1, dataset_2] * 3:
+        for t, (x, y) in enumerate(dataset.take(500)):
+            _ = buffered_classifier.predict_one(x, t)
+            buffered_classifier.learn_one(x, y, timestep=t)
+
+            representation_window = buffered_classifier.active_window_state_representations[
+                buffered_classifier.active_state_id
+            ].supervised_window
+            if len(representation_window) > 0:
+                assert buffered_classifier.active_window_state_representations[
+                    buffered_classifier.active_state_id
+                ].meta_feature_values[0] == approx(np.mean([not x[1] for x in representation_window]))
