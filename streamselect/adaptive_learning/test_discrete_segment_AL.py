@@ -97,6 +97,9 @@ def test_buffered_base_predictions() -> None:
         for t, (x, y) in enumerate(dataset.take(500)):
             p_baseline = base_classifier.predict_one(x, t)
             p_discrete = discrete_classifier.predict_one(x, t)
+            if base_classifier.performance_monitor.last_drift or discrete_classifier.performance_monitor.last_drift:
+                print(base_classifier.performance_monitor.last_drift)
+                break
             assert p_baseline == p_discrete
 
             base_classifier.learn_one(x, y, timestep=t)
