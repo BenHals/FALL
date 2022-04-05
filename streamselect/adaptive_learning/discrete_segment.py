@@ -30,7 +30,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,
         train_representation: bool = True,
-        window_size: int = 1,
+        representation_window_size: int = 1,
         drift_detection_mode: str = "any",
     ) -> None:
         """
@@ -41,7 +41,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
 
         representation_constructor: Callable[[int, int, str, int], ConceptRepresentation]
             A function to generate a new concept representation taking in:
-            window_size, state_id, mode and update_period.
+            representation_window_size, state_id, mode and update_period.
 
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
@@ -57,7 +57,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
             Whether or not new states train representations.
             Must be set to automatically construct states.
 
-        window_size: int
+        representation_window_size: int
             Default: 1
             The number of observations to construct a concept representation over.
 
@@ -78,7 +78,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
             max_size=1,
             valuation_policy=ValuationPolicy.FIFO,
             train_representation=train_representation,
-            window_size=window_size,
+            representation_window_size=representation_window_size,
             construct_pair_representations=False,
             prediction_mode="active",
             background_state_mode=None,
@@ -102,7 +102,7 @@ class BufferedDiscreteSegmentAL(BaseBufferedAdaptiveLearner):
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,
         train_representation: bool = True,
-        window_size: int = 1,
+        representation_window_size: int = 1,
         drift_detection_mode: str = "any",
         buffer_timeout_max: float = 0.0,
         buffer_timeout_scheduler: Callable[
@@ -117,7 +117,7 @@ class BufferedDiscreteSegmentAL(BaseBufferedAdaptiveLearner):
 
         representation_constructor: Callable[[int, int, str, int], ConceptRepresentation]
             A function to generate a new concept representation taking in:
-            window_size, state_id, mode and update_period.
+            representation_window_size, state_id, mode and update_period.
 
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
@@ -133,7 +133,7 @@ class BufferedDiscreteSegmentAL(BaseBufferedAdaptiveLearner):
             Whether or not new states train representations.
             Must be set to automatically construct states.
 
-        window_size: int
+        representation_window_size: int
             Default: 1
             The number of observations to construct a concept representation over.
 
@@ -164,7 +164,7 @@ class BufferedDiscreteSegmentAL(BaseBufferedAdaptiveLearner):
             max_size=1,
             valuation_policy=ValuationPolicy.FIFO,
             train_representation=train_representation,
-            window_size=window_size,
+            representation_window_size=representation_window_size,
             construct_pair_representations=False,
             prediction_mode="active",
             background_state_mode=None,

@@ -1,13 +1,19 @@
 """ Base adaptive learning class. """
 import abc
 from collections import deque
-from typing import Callable, Deque, Dict, Optional, Set, Tuple, Union
+from typing import Callable, Deque, Dict, List, Optional, Set, Tuple, Union
 
 from river.base import Classifier, DriftDetector
 from river.base.typing import ClfTarget
 from river.utils import pure_inference_mode
 
 from streamselect.adaptive_learning.buffer import SupervisedUnsupervisedBuffer
+from streamselect.adaptive_learning.reidentification_schedulers import (
+    BaseReidentificationScheduler,
+    DriftInfo,
+    DriftType,
+    ReidentificationSchedule,
+)
 from streamselect.concept_representations import ConceptRepresentation
 from streamselect.repository import Repository, RepresentationComparer, ValuationPolicy
 from streamselect.states import State
@@ -26,6 +32,7 @@ class PerformanceMonitor:
         self.background_in_warning: bool = False
         self.background_state_relevance: float = -1
         self.last_observation: Optional[Observation] = None
+        self.last_drift: Optional[DriftInfo] = None
 
     def step_reset(self, initial_active_state_id: int) -> None:
         """Reset monitoring on taking a new step."""
@@ -63,11 +70,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         max_size: int = -1,
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         train_representation: bool = True,
-        window_size: int = 1,
+        representation_window_size: int = 25,
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
         drift_detection_mode: str = "any",
+        reidentification_check_schedulers: Optional[List[BaseReidentificationScheduler]] = None,
     ) -> None:
         """
         Parameters
@@ -77,7 +85,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         representation_constructor: Callable[[int, int, str, int], ConceptRepresentation]
             A function to generate a new concept representation taking in:
-             window_size, state_id, mode and update_period.
+             representation_window_size, state_id, mode and update_period.
 
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
@@ -103,7 +111,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             Whether or not new states train representations.
             Must be set to automatically construct states.
 
-        window_size: int
+        representation_window_size: int
             Default: 1
             The number of observations to construct a concept representation over.
 
@@ -136,25 +144,35 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             "lower": Significant changes where the new value is lower than the mean is detected.
             "higher": Significant changes where the new value is higher than the mean is detected.
 
+        reidentification_check_schedulers: Optional[List[BaseReidentificationScheduler]]
+            Default: None
+            A list of schedulers to perform automated active state checks.
+            For example, a DriftDetectionCheck(check_delay) can be passed to perform
+            a re-identification check check_delay timesteps after each detection in order
+            to confirm the optimal state was selected.
+
         """
         self.representation_update_period = representation_update_period
         self.max_size = max_size
         self.valuation_policy = valuation_policy
         self.classifier_constructor = classifier_constructor
         self.active_representation_constructor = lambda state_id: representation_constructor(
-            window_size, state_id, "active", representation_update_period
+            representation_window_size, state_id, "active", representation_update_period
         )
         self.concept_representation_constructor = lambda state_id: representation_constructor(
-            window_size, state_id, "concept", representation_update_period
+            representation_window_size, state_id, "concept", representation_update_period
         )
         self.representation_comparer = representation_comparer
         self.drift_detector_constructor = drift_detector_constructor
         self.train_representation = train_representation
-        self.window_size = window_size
+        self.representation_window_size = representation_window_size
         self.construct_pair_representations = construct_pair_representations
         self.prediction_mode = prediction_mode
         self.background_state_mode = background_state_mode
         self.drift_detection_mode = drift_detection_mode
+        self.reidentification_check_schedulers = (
+            reidentification_check_schedulers if reidentification_check_schedulers is not None else []
+        )
 
         # Validation
         if self.prediction_mode != "all" and self.construct_pair_representations:
@@ -167,8 +185,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # timestep for supervised data
         self.unsupervised_timestep = 0
 
-        self.unsupervised_active_window: Deque[Observation] = deque(maxlen=self.window_size)
-        self.supervised_active_window: Deque[Observation] = deque(maxlen=self.window_size)
+        self.unsupervised_active_window: Deque[Observation] = deque(maxlen=self.representation_window_size)
+        self.supervised_active_window: Deque[Observation] = deque(maxlen=self.representation_window_size)
 
         self.repository = Repository(
             max_size=self.max_size,
@@ -186,6 +204,11 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         }
 
         self.setup_background_state()
+
+        self.reidentification_schedule = ReidentificationSchedule()
+        for scheduler in self.reidentification_check_schedulers:
+            self.reidentification_schedule.add_scheduler(scheduler)
+        self.reidentification_schedule.initialize(0)
 
         self.performance_monitor = PerformanceMonitor()
 
@@ -310,10 +333,34 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.performance_monitor.in_warning = in_warning
         self.performance_monitor.active_state_relevance = active_state_relevance
 
+        # Check if we need to perform reidentification
+        # either from a scheduled check for from a drift detection.
+        step_reidentification_checks: List[DriftInfo] = []
+        scheduled_checks = self.reidentification_schedule.get_scheduled_reidentifications(int(observation.seen_at))
+        if scheduled_checks is not None:
+            step_reidentification_checks += scheduled_checks
         if in_drift:
-            state_relevance = self.perform_reidentification()
-            new_active_state = self.get_adapted_state(state_relevance)
+            step_reidentification_checks.append(
+                DriftInfo(int(observation.seen_at), drift_type=DriftType.DriftDetectorTriggered)
+            )
+
+        # Schedule any new re-identification checks.
+        for drift in step_reidentification_checks:
+            self.reidentification_schedule.schedule_reidentification(drift)
+
+        if len(step_reidentification_checks) > 0:
+            # We always use the drift detector drift if availiable, or the newest scheduled drift if not.
+            # This is based on the order, where scheduled drifts are expected to be ordered by time
+            # then any detection is added last.
+            drift = step_reidentification_checks[-1]
+            self.performance_monitor.last_drift = drift
+            state_relevance = self.perform_reidentification(drift)
+            drift.reidentification_relevance = state_relevance
+            new_active_state = self.get_adapted_state(state_relevance, drift)
             if new_active_state != self.get_active_state():
+                drift.triggered_transition = True
+                drift.transitioned_from = self.active_state_id
+                drift.transitioned_to = new_active_state.state_id
                 self.transition_active_state(new_active_state, True, in_warning)
                 self.performance_monitor.made_transition = True
 
@@ -439,7 +486,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         return representation
 
-    def perform_reidentification(self) -> Dict[int, float]:
+    def perform_reidentification(self, drift: DriftInfo) -> Dict[int, float]:
         """Estimate the relevance of each state in the repository to current data."""
         state_relevance: Dict[int, float] = {}
         for state_id, state in self.repository.states.items():
@@ -456,11 +503,21 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             )
         return state_relevance
 
-    def get_adapted_state(self, state_relevance: Dict[int, float]) -> State:
+    def get_adapted_state(self, state_relevance: Dict[int, float], drift: DriftInfo) -> State:
         """Returns a new state adapted to current conditions, based on estimated relevance
         of previous states. Adds the state to the repository."""
         max_state_id, _ = max(state_relevance.items(), key=lambda x: x[1])
-        if max_state_id in [-1, self.active_state_id]:
+
+        # Setup IDs which trigger a new state to be created.
+        # If we are just checking reidentification, this is only the background state.
+        # If we are reacting to a drift detection trigger, we also transition to a new state
+        # if the current active state is most relevant, as the drift detection indicates it
+        # is no longer relevant.
+        new_state_triggers: List[int] = [-1]
+        if drift.drift_type == DriftType.DriftDetectorTriggered:
+            new_state_triggers.append(self.active_state_id)
+
+        if max_state_id in new_state_triggers:
             # We skip memory management so that we may use states while processing
             # the transition. We manually call apply_memory_management at the end of
             # the transition to handle this after the transition.
@@ -497,6 +554,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         }
         self.drift_detector.reset()
         self.repository.apply_memory_management()
+        self.reidentification_schedule.transition_reset(self.supervised_timestep)
 
 
 def get_constant_max_buffer_scheduler() -> Callable[[float, State, Optional[Observation]], float]:
@@ -538,7 +596,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         max_size: int = -1,
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         train_representation: bool = True,
-        window_size: int = 1,
+        representation_window_size: int = 25,
         buffer_timeout_max: float = 0.0,
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
@@ -556,7 +614,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
 
         representation_constructor: Callable[[int, int, str, int], ConceptRepresentation]
             A function to generate a new concept representation taking in:
-             window_size, state_id, mode and update_period.
+             representation_window_size, state_id, mode and update_period.
 
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
@@ -582,7 +640,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             Whether or not new states train representations.
             Must be set to automatically construct states.
 
-        window_size: int
+        representation_window_size: int
             The number of observations to construct a concept representation over.
 
         buffer_timeout_max: float
@@ -610,7 +668,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             max_size,
             valuation_policy,
             train_representation,
-            window_size,
+            representation_window_size,
             construct_pair_representations,
             prediction_mode,
             background_state_mode,
@@ -625,7 +683,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         # than buffer_timout supervised observations, and all unsupervised observations collected
         # before this observation is also released.
         self.buffer = SupervisedUnsupervisedBuffer(
-            self.window_size, self.buffer_timeout, self.buffer_timeout, release_strategy="supervised"
+            self.representation_window_size, self.buffer_timeout, self.buffer_timeout, release_strategy="supervised"
         )
 
     def predict_one(self, x: dict, timestep: Optional[int] = None) -> ClfTarget:
