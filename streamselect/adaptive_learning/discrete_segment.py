@@ -31,7 +31,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
         representation_update_period: int = 1,
         train_representation: bool = True,
         representation_window_size: int = 1,
-        drift_detection_mode: str = "any",
+        drift_detection_mode: str = "lower",
     ) -> None:
         """
         Parameters
@@ -103,7 +103,7 @@ class BufferedDiscreteSegmentAL(BaseBufferedAdaptiveLearner):
         representation_update_period: int = 1,
         train_representation: bool = True,
         representation_window_size: int = 1,
-        drift_detection_mode: str = "any",
+        drift_detection_mode: str = "lower",
         buffer_timeout_max: float = 0.0,
         buffer_timeout_scheduler: Callable[
             [float, State, Optional[Observation]], float

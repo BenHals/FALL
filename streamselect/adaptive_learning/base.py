@@ -74,7 +74,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
-        drift_detection_mode: str = "any",
+        drift_detection_mode: str = "lower",
         reidentification_check_schedulers: Optional[List[BaseReidentificationScheduler]] = None,
     ) -> None:
         """
@@ -601,7 +601,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
-        drift_detection_mode: str = "any",
+        drift_detection_mode: str = "lower",
         buffer_timeout_scheduler: Callable[
             [float, State, Optional[Observation]], float
         ] = get_increasing_buffer_scheduler(1.0),
