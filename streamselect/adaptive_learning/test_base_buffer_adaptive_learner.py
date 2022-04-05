@@ -190,6 +190,10 @@ def test_buffer_lag_constant() -> None:
                 < 0  # At the very start our test will be off due to initialization
                 or buffered_classifier.get_active_state().weight_since_last_active
                 != 0  # When we transition to a new state will be off until we see an ob
+                or (
+                    buffered_classifier.get_active_state().weight_since_last_active == 0
+                    and buffered_classifier.get_active_state().last_trained_active_timestep != t
+                )
                 or buffered_classifier.get_active_state().last_trained_active_timestep
                 == t - buffer_timeout  # Test that we never train on unbuffered obs
             )
@@ -218,7 +222,7 @@ def test_buffer_lag_increasing() -> None:
     t = 0
     for dataset in [dataset_0, dataset_1, dataset_2] * 3:
         for x, y in dataset.take(500):
-            initial_seen_weight = buffered_classifier.get_active_state().seen_weight
+            initial_seen_weight = buffered_classifier.get_active_state().active_seen_weight
             _ = buffered_classifier.predict_one(x, t)
             buffered_classifier.learn_one(x, y, timestep=t)
             assert (
@@ -228,6 +232,10 @@ def test_buffer_lag_increasing() -> None:
                 != 0  # When we transition to a new state will be off until we see an ob
                 or buffered_classifier.get_active_state().seen_weight
                 == 0  # When we transition to a new state will be off until we see an ob
+                or (
+                    buffered_classifier.get_active_state().weight_since_last_active == 0
+                    and buffered_classifier.get_active_state().last_trained_active_timestep != t
+                )
                 or buffered_classifier.get_active_state().last_trained_active_timestep
                 == t
                 - min(
@@ -261,7 +269,7 @@ def test_buffer_lag_increasing_2() -> None:
     t = 0
     for dataset in [dataset_0, dataset_1, dataset_2] * 3:
         for x, y in dataset.take(500):
-            initial_seen_weight = buffered_classifier.get_active_state().seen_weight
+            initial_seen_weight = buffered_classifier.get_active_state().active_seen_weight
             _ = buffered_classifier.predict_one(x, t)
             buffered_classifier.learn_one(x, y, timestep=t)
             assert (
@@ -271,6 +279,10 @@ def test_buffer_lag_increasing_2() -> None:
                 != 0  # When we transition to a new state will be off until we see an ob
                 or buffered_classifier.get_active_state().seen_weight
                 == 0  # When we transition to a new state will be off until we see an ob
+                or (
+                    buffered_classifier.get_active_state().weight_since_last_active == 0
+                    and buffered_classifier.get_active_state().last_trained_active_timestep != t
+                )
                 or buffered_classifier.get_active_state().last_trained_active_timestep
                 == t
                 - min(

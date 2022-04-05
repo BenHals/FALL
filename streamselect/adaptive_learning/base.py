@@ -578,7 +578,7 @@ def get_increasing_buffer_scheduler(
     def get_buffer_timeout(
         buffer_timeout_max: float, active_state: State, observation: Optional[Observation] = None
     ) -> float:
-        return min(round(active_state.seen_weight * increase_rate), buffer_timeout_max)
+        return min(round(active_state.active_seen_weight * increase_rate), buffer_timeout_max)
 
     return get_buffer_timeout
 
