@@ -770,7 +770,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             for state in trained_states:
                 state.learn_one(stable_observation)
 
-            self.step(stable_observation)
+        self.step(supervised_observation)
 
     def transition_reset(
         self, prev_active_state_id: int, next_active_state_id: int, in_drift: bool, in_warning: bool
