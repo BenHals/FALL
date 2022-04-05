@@ -31,6 +31,17 @@ class BaseDistribution(abc.ABC):
         """Returns a value describing the distribution."""
         return 0.0
 
+    @property
+    def stdev(self) -> float:
+        """Returns a value describing the variance."""
+        return 0.0
+
+    def __str__(self) -> str:
+        return f"|{self.mean}-{self.stdev}|"
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class SingleValueDistribution(BaseDistribution):
     """A distribution containing only the most recent value."""

@@ -100,6 +100,7 @@ def test_buffered_base_predictions() -> None:
             if base_classifier.performance_monitor.last_drift or discrete_classifier.performance_monitor.last_drift:
                 print(base_classifier.performance_monitor.last_drift)
                 break
+            print(t)
             assert p_baseline == p_discrete
 
             base_classifier.learn_one(x, y, timestep=t)
