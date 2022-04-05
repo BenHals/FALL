@@ -29,16 +29,16 @@ def test_drift_detection_check() -> None:
         if len(real_drifts) > 0 and real_drifts[0].drift_timestep == t:
             real_drift = real_drifts.pop(0)
 
-        triggered_drift = schedule.get_scheduled_reidentifications(t)
+        triggered_drifts = schedule.get_scheduled_reidentifications(t)
 
         if real_drift:
             schedule.schedule_reidentification(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             schedule.schedule_reidentification(triggered_drift)
 
         if real_drift:
             drift_timeline.append(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             drift_timeline.append(triggered_drift)
 
     assert len(drift_timeline) == 6
@@ -73,11 +73,11 @@ def test_drift_detection_check_transition() -> None:
         if len(real_drifts) > 0 and real_drifts[0].drift_timestep == t:
             real_drift = real_drifts.pop(0)
 
-        triggered_drift = schedule.get_scheduled_reidentifications(t)
+        triggered_drifts = schedule.get_scheduled_reidentifications(t)
 
         if real_drift:
             schedule.schedule_reidentification(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             schedule.schedule_reidentification(triggered_drift)
 
         # In the drift check case, the transition_reset should have no effect,
@@ -88,7 +88,7 @@ def test_drift_detection_check_transition() -> None:
 
         if real_drift:
             drift_timeline.append(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             drift_timeline.append(triggered_drift)
 
     assert len(drift_timeline) == 6
@@ -123,11 +123,11 @@ def test_drift_detection_check_transition_cancel() -> None:
         if len(real_drifts) > 0 and real_drifts[0].drift_timestep == t:
             real_drift = real_drifts.pop(0)
 
-        triggered_drift = schedule.get_scheduled_reidentifications(t)
+        triggered_drifts = schedule.get_scheduled_reidentifications(t)
 
         if real_drift:
             schedule.schedule_reidentification(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             schedule.schedule_reidentification(triggered_drift)
 
         # A transition should cancel pending checks which have not triggered.
@@ -136,7 +136,7 @@ def test_drift_detection_check_transition_cancel() -> None:
 
         if real_drift:
             drift_timeline.append(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             drift_timeline.append(triggered_drift)
 
     assert len(drift_timeline) == 5
@@ -169,16 +169,16 @@ def test_periodic_check() -> None:
         if len(real_drifts) > 0 and real_drifts[0].drift_timestep == t:
             real_drift = real_drifts.pop(0)
 
-        triggered_drift = schedule.get_scheduled_reidentifications(t)
+        triggered_drifts = schedule.get_scheduled_reidentifications(t)
 
         if real_drift:
             schedule.schedule_reidentification(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             schedule.schedule_reidentification(triggered_drift)
 
         if real_drift:
             drift_timeline.setdefault(t, []).append(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             drift_timeline.setdefault(t, []).append(triggered_drift)
 
     total_periodic_checks = total_timesteps // check_period
@@ -209,11 +209,11 @@ def test_periodic_check_reset() -> None:
         if len(real_drifts) > 0 and real_drifts[0].drift_timestep == t:
             real_drift = real_drifts.pop(0)
 
-        triggered_drift = schedule.get_scheduled_reidentifications(t)
+        triggered_drifts = schedule.get_scheduled_reidentifications(t)
 
         if real_drift:
             schedule.schedule_reidentification(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             schedule.schedule_reidentification(triggered_drift)
 
         if real_drift:
@@ -221,7 +221,7 @@ def test_periodic_check_reset() -> None:
 
         if real_drift:
             drift_timeline.setdefault(t, []).append(real_drift)
-        if triggered_drift:
+        for triggered_drift in triggered_drifts:
             drift_timeline.setdefault(t, []).append(triggered_drift)
 
     periodic_ts = [50, 100, 150, 200, 275, 325, 375, 425, 475, 550]

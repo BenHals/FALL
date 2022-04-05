@@ -4,7 +4,7 @@ import abc
 import heapq
 from enum import Enum
 from functools import total_ordering
-from typing import List, Optional
+from typing import List
 
 
 class DriftType(Enum):
@@ -124,11 +124,11 @@ class ReidentificationSchedule:
                     continue
                 heapq.heappush(self.scheduled_drifts, check)
 
-    def get_scheduled_reidentifications(self, current_timestep: int) -> Optional[DriftInfo]:
-        """Returns the most recent re-identification check scheduled for or prior to the current timestep."""
-        scheduled_reidentification = None
+    def get_scheduled_reidentifications(self, current_timestep: int) -> List[DriftInfo]:
+        """Returns and re-identification checks scheduled for or prior to the current timestep."""
+        scheduled_reidentification: List[DriftInfo] = []
         while len(self.scheduled_drifts) > 0 and self.scheduled_drifts[0].drift_timestep <= current_timestep:
-            scheduled_reidentification = heapq.heappop(self.scheduled_drifts)
+            scheduled_reidentification.append(heapq.heappop(self.scheduled_drifts))
         return scheduled_reidentification
 
     def transition_reset(self, transition_timestep: int) -> None:
