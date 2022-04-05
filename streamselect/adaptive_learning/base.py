@@ -70,7 +70,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         max_size: int = -1,
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         train_representation: bool = True,
-        window_size: int = 1,
+        representation_window_size: int = 1,
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
@@ -85,7 +85,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         representation_constructor: Callable[[int, int, str, int], ConceptRepresentation]
             A function to generate a new concept representation taking in:
-             window_size, state_id, mode and update_period.
+             representation_window_size, state_id, mode and update_period.
 
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
@@ -111,7 +111,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             Whether or not new states train representations.
             Must be set to automatically construct states.
 
-        window_size: int
+        representation_window_size: int
             Default: 1
             The number of observations to construct a concept representation over.
 
@@ -157,15 +157,15 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.valuation_policy = valuation_policy
         self.classifier_constructor = classifier_constructor
         self.active_representation_constructor = lambda state_id: representation_constructor(
-            window_size, state_id, "active", representation_update_period
+            representation_window_size, state_id, "active", representation_update_period
         )
         self.concept_representation_constructor = lambda state_id: representation_constructor(
-            window_size, state_id, "concept", representation_update_period
+            representation_window_size, state_id, "concept", representation_update_period
         )
         self.representation_comparer = representation_comparer
         self.drift_detector_constructor = drift_detector_constructor
         self.train_representation = train_representation
-        self.window_size = window_size
+        self.representation_window_size = representation_window_size
         self.construct_pair_representations = construct_pair_representations
         self.prediction_mode = prediction_mode
         self.background_state_mode = background_state_mode
@@ -185,8 +185,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # timestep for supervised data
         self.unsupervised_timestep = 0
 
-        self.unsupervised_active_window: Deque[Observation] = deque(maxlen=self.window_size)
-        self.supervised_active_window: Deque[Observation] = deque(maxlen=self.window_size)
+        self.unsupervised_active_window: Deque[Observation] = deque(maxlen=self.representation_window_size)
+        self.supervised_active_window: Deque[Observation] = deque(maxlen=self.representation_window_size)
 
         self.repository = Repository(
             max_size=self.max_size,
@@ -355,8 +355,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             drift = step_reidentification_checks[-1]
             self.performance_monitor.last_drift = drift
             state_relevance = self.perform_reidentification(drift)
+            drift.reidentification_relevance = state_relevance
             new_active_state = self.get_adapted_state(state_relevance, drift)
             if new_active_state != self.get_active_state():
+                drift.triggered_transition = True
+                drift.transitioned_from = self.active_state_id
+                drift.transitioned_to = new_active_state.state_id
                 self.transition_active_state(new_active_state, True, in_warning)
                 self.performance_monitor.made_transition = True
 
@@ -592,7 +596,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         max_size: int = -1,
         valuation_policy: ValuationPolicy = ValuationPolicy.NoPolicy,
         train_representation: bool = True,
-        window_size: int = 1,
+        representation_window_size: int = 1,
         buffer_timeout_max: float = 0.0,
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
@@ -610,7 +614,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
 
         representation_constructor: Callable[[int, int, str, int], ConceptRepresentation]
             A function to generate a new concept representation taking in:
-             window_size, state_id, mode and update_period.
+             representation_window_size, state_id, mode and update_period.
 
         representation_comparer: RepresentationComparer
             An object capable of calculating similarity between two representations.
@@ -636,7 +640,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             Whether or not new states train representations.
             Must be set to automatically construct states.
 
-        window_size: int
+        representation_window_size: int
             The number of observations to construct a concept representation over.
 
         buffer_timeout_max: float
@@ -664,7 +668,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             max_size,
             valuation_policy,
             train_representation,
-            window_size,
+            representation_window_size,
             construct_pair_representations,
             prediction_mode,
             background_state_mode,
@@ -679,7 +683,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         # than buffer_timout supervised observations, and all unsupervised observations collected
         # before this observation is also released.
         self.buffer = SupervisedUnsupervisedBuffer(
-            self.window_size, self.buffer_timeout, self.buffer_timeout, release_strategy="supervised"
+            self.representation_window_size, self.buffer_timeout, self.buffer_timeout, release_strategy="supervised"
         )
 
     def predict_one(self, x: dict, timestep: Optional[int] = None) -> ClfTarget:

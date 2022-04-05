@@ -4,7 +4,7 @@ import abc
 import heapq
 from enum import Enum
 from functools import total_ordering
-from typing import List
+from typing import Dict, List, Optional
 
 
 class DriftType(Enum):
@@ -20,6 +20,10 @@ class DriftInfo:
     def __init__(self, timestep: int, drift_type: DriftType = DriftType.DriftDetectorTriggered) -> None:
         self.drift_timestep = timestep
         self.drift_type = drift_type
+        self.triggered_transition: Optional[bool] = None
+        self.transitioned_from: Optional[int] = None
+        self.transitioned_to: Optional[int] = None
+        self.reidentification_relevance: Optional[Dict[int, float]] = None
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, DriftInfo):
@@ -30,6 +34,17 @@ class DriftInfo:
         if not isinstance(other, DriftInfo):
             return NotImplemented
         return self.drift_timestep < other.drift_timestep
+
+    def __str__(self) -> str:
+        if not self.triggered_transition:
+            return f"D({self.drift_type}@{self.drift_timestep})"
+        return (
+            f"D({self.drift_type}@{self.drift_timestep}"
+            + f"-{self.reidentification_relevance}|{self.transitioned_from}->{self.transitioned_to})"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class BaseReidentificationScheduler(abc.ABC):

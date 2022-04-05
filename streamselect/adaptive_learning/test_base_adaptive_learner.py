@@ -1,8 +1,16 @@
+from typing import List, Optional
+
 from river import synth
 from river.drift import ADWIN
 from river.tree import HoeffdingTreeClassifier
 
 from streamselect.adaptive_learning import BaseAdaptiveLearner
+from streamselect.adaptive_learning.reidentification_schedulers import (
+    DriftDetectionCheck,
+    DriftInfo,
+    DriftType,
+    PeriodicCheck,
+)
 from streamselect.concept_representations import ErrorRateRepresentation
 from streamselect.repository import AbsoluteValueComparer
 from streamselect.states import State
@@ -77,7 +85,7 @@ def test_init() -> None:
         representation_constructor=ErrorRateRepresentation,
         representation_comparer=AbsoluteValueComparer(),
         drift_detector_constructor=ADWIN,
-        window_size=window_size,
+        representation_window_size=window_size,
         representation_update_period=update_period,
     )
 
@@ -354,3 +362,93 @@ def test_drift_transition() -> None:
 
         assert not al_classifier.performance_monitor.in_drift
         assert not al_classifier.performance_monitor.made_transition
+
+
+def test_reidentification_schedule_detection() -> None:
+    """Test that drifts are scheduled at the correct times using the DriftDetectionScheduler."""
+    # In this case, we want to see a reidentification check performed 50 timesteps after every drift.
+    check_delay = 50
+    classifier = BaseAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+        reidentification_check_schedulers=[DriftDetectionCheck(check_delay)],
+        representation_window_size=50,
+    )
+
+    dataset_0 = synth.STAGGER(classification_function=0, seed=0)
+    dataset_1 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=2, seed=0)
+    active_state_segments: List[Optional[int]] = [None]
+    drift_checks: List[Optional[DriftInfo]] = [None]
+    t = 0
+    for dataset in [dataset_0, dataset_1, dataset_2] * 3:
+        for x, y in dataset.take(500):
+            _ = classifier.predict_one(x, t)
+            classifier.learn_one(x, y, timestep=t)
+            current_id = classifier.performance_monitor.final_active_state_id
+            current_drift = classifier.performance_monitor.last_drift
+            if current_id != active_state_segments[-1]:
+                active_state_segments.append(current_id)
+            if current_drift != drift_checks[-1]:
+                drift_checks.append(current_drift)
+            t += 1
+
+    for i, drift in enumerate(drift_checks):
+        if drift is None:
+            continue
+        if drift.drift_type == DriftType.ScheduledOne:
+            prev_drift = drift_checks[i - 1]
+            assert prev_drift is not None
+            assert prev_drift.drift_type == DriftType.DriftDetectorTriggered or prev_drift.triggered_transition
+            assert prev_drift.drift_timestep == drift.drift_timestep - check_delay - 1
+
+
+def test_reidentification_schedule_periodic() -> None:
+    """Test that drifts are scheduled at the correct times using the PeriodicCheck."""
+    # In this case, we want to see a reidentification check performed every 50.
+    check_period = 100
+    classifier = BaseAdaptiveLearner(
+        classifier_constructor=HoeffdingTreeClassifier,
+        representation_constructor=ErrorRateRepresentation,
+        representation_comparer=AbsoluteValueComparer(),
+        drift_detector_constructor=ADWIN,
+        background_state_mode="drift_reset",
+        reidentification_check_schedulers=[PeriodicCheck(check_period)],
+        representation_window_size=50,
+    )
+
+    dataset_0 = synth.STAGGER(classification_function=0, seed=0)
+    dataset_1 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=2, seed=0)
+    active_state_segments: List[Optional[int]] = [None]
+    drift_checks: List[Optional[DriftInfo]] = [None]
+    t = 0
+    for dataset in [dataset_0, dataset_1, dataset_2] * 3:
+        for x, y in dataset.take(500):
+            _ = classifier.predict_one(x, t)
+            classifier.learn_one(x, y, timestep=t)
+            current_id = classifier.performance_monitor.final_active_state_id
+            current_drift = classifier.performance_monitor.last_drift
+            if current_id != active_state_segments[-1]:
+                active_state_segments.append(current_id)
+            if current_drift != drift_checks[-1]:
+                drift_checks.append(current_drift)
+            t += 1
+
+    for i, drift in enumerate(drift_checks):
+        if drift is None:
+            continue
+        if drift.drift_type == DriftType.ScheduledOne:
+            prev_drift = drift_checks[i - 1]
+            print(drift, prev_drift)
+            assert prev_drift is not None
+            if prev_drift.triggered_transition:
+                assert prev_drift.drift_timestep == drift.drift_timestep - check_period - 1
+            else:
+                assert prev_drift.drift_timestep == drift.drift_timestep - check_period
+
+
+# %%
