@@ -16,7 +16,8 @@ def circular_transition_pattern(
 ) -> List[int]:
     """Create a circular transition pattern where concepts are shuffled into a given order, then transitions around
     this order are generated. Transitions may skip elements, and random transitions are allowed based on parameters.
-    A circular pattern ensures that all concepts can appear in the future, i.e., no sinks may appear during the pattern.
+    A circular pattern ensures that all concepts can appear in the future,
+    i.e., no sinks may appear during the pattern.
     Parameters
     ----------
 
