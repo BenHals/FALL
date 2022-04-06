@@ -21,3 +21,37 @@ def maximum_relevance_adaptation(
         assert bg_state is not None
         adapted_state = bg_state
     return adapted_state
+
+
+def max_acc_sig_relevance_adaptation(
+    bg_state: Optional[State], repository: Repository, state_relevance: Dict[int, float], drift: Optional[DriftInfo]
+) -> State:
+    """Get the set of states from B u R with maximum relevance within some significance threshold,
+    and return the most accurate."""
+    # accept states within threshold_stdev standard deviation of the max relevance.
+    threshold_stdev = 1.0
+
+    max_id, max_relevance = max(state_relevance.items(), key=lambda x: x[1])
+    if max_id == -1:
+        assert bg_state is not None
+        max_stdev = bg_state.in_concept_relevance_distribution.stdev
+    else:
+        max_stdev = repository.states[max_id].in_concept_relevance_distribution.stdev
+
+    accepted_states = []
+    for state_id, relevance in state_relevance.items():
+        if state_id == -1:
+            assert bg_state is not None
+            state = bg_state
+        else:
+            state = repository.states[state_id]
+        state_stdev = state.in_concept_relevance_distribution.stdev
+
+        if relevance >= max_relevance - (max_stdev * threshold_stdev) or max_relevance <= relevance + (
+            state_stdev * threshold_stdev
+        ):
+            accepted_states.append(state)
+
+    adapted_state = max(accepted_states, key=lambda x: x.in_concept_accuracy_record.estimation)
+
+    return adapted_state

@@ -15,7 +15,10 @@ from .base import (
     get_constant_max_buffer_scheduler,
     get_increasing_buffer_scheduler,
 )
-from .classifier_adaptation import maximum_relevance_adaptation
+from .classifier_adaptation import (
+    max_acc_sig_relevance_adaptation,
+    maximum_relevance_adaptation,
+)
 from .discrete_segment import BufferedDiscreteSegmentAL, DiscreteSegmentAL
 
 __all__ = [
@@ -26,4 +29,5 @@ __all__ = [
     "get_constant_max_buffer_scheduler",
     "get_increasing_buffer_scheduler",
     "maximum_relevance_adaptation",
+    "max_acc_sig_relevance_adaptation",
 ]

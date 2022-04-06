@@ -9,6 +9,7 @@ from river.utils import pure_inference_mode
 
 from streamselect.adaptive_learning.buffer import SupervisedUnsupervisedBuffer
 from streamselect.adaptive_learning.classifier_adaptation import (
+    max_acc_sig_relevance_adaptation,
     maximum_relevance_adaptation,
 )
 from streamselect.adaptive_learning.reidentification_schedulers import (
@@ -177,8 +178,17 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.reidentification_check_schedulers = (
             reidentification_check_schedulers if reidentification_check_schedulers is not None else []
         )
+        self.classifier_adaptation_mode = "MASR"
 
-        self.perform_classifier_adaptation = maximum_relevance_adaptation
+        classifier_adaptation_mode_map = {"MASR": max_acc_sig_relevance_adaptation, "MR": maximum_relevance_adaptation}
+
+        # self.perform_classifier_adaptation = maximum_relevance_adaptation
+        try:
+            self.perform_classifier_adaptation = classifier_adaptation_mode_map[
+                self.classifier_adaptation_mode.upper()
+            ]
+        except KeyError as e:
+            raise ValueError(f"Classifier adaptation mode {self.classifier_adaptation_mode} not recognized. ") from e
 
         # Validation
         if self.prediction_mode != "all" and self.construct_pair_representations:
