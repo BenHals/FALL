@@ -22,6 +22,12 @@ class Concept:
         self.name = name
         self.max_n = max_n
 
+    def __str__(self) -> str:
+        return f"{self.name}"
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class ConceptSegment:
     def __init__(self, concept_stream: Concept, segment_start: int, segment_end: int, recurrence_count: int):
@@ -30,3 +36,9 @@ class ConceptSegment:
         self.segment_start = segment_start
         self.segment_end = segment_end
         self.recurrence_count = recurrence_count
+
+    def __str__(self) -> str:
+        return f"{self.concept}r{self.recurrence_count}:{self.segment_start}->{self.segment_end}"
+
+    def __repr__(self) -> str:
+        return str(self)
