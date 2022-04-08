@@ -1,4 +1,8 @@
-from typing import Counter, List, Optional
+from typing import Counter, Iterator, List, Optional, Tuple, Union
+
+import numpy as np
+from river.datasets.base import Dataset
+from river.utils.skmultiflow_utils import check_random_state
 
 from streamselect.data.utils import Concept, ConceptSegment
 
@@ -71,3 +75,117 @@ def make_stream_concepts(
         recurrence_count[segment_concept.name] += 1
 
     return stream_concepts
+
+
+class ConceptSegmentDataStream(Dataset):
+    """Generates a stream made up of concept segments.
+
+    Each concept represents a pure joint distribution between x and y.
+    This class represents streams made up of segments each drawn from a
+    particular concept. Concepts may reoccur across the stream when
+    multiple segments are drawn from the same concept.
+
+    Segments are separated by concept drift. This may be abrupt, where
+    the change is distribution is instant, or gradual, where there is an
+    increasing probability of being drawn from the next concept over some
+    window. We use the sigmoid function to represent this.
+    """
+
+    def __init__(
+        self,
+        concept_segments: List[ConceptSegment],
+        drifts: Union[int, List[int]],
+        seed: Union[int, np.random.RandomState, None] = None,
+    ) -> None:
+        self.concept_segments = concept_segments
+        if len(concept_segments) <= 1:
+            raise AttributeError("Only a single concept passed.")
+
+        if isinstance(drifts, int):
+            self.drifts = [drifts] * (len(self.concept_segments) - 1)
+        else:
+            self.drifts = drifts
+        if len(self.drifts) != len(concept_segments) - 1:
+            raise AttributeError("Drifts size does not match number of concept segments.")
+
+        self.seed = seed
+
+        # Check consistancy
+        first_stream = concept_segments[0].concept.data
+        n_classes = first_stream.n_classes
+        for seg in concept_segments[1:]:
+            if seg.concept.data.n_features != first_stream.n_features:
+                raise AttributeError("Inconsistent n_features.")
+            if seg.concept.data.n_outputs != first_stream.n_outputs:
+                raise AttributeError("Inconsistent n_features.")
+            n_classes = max(n_classes, seg.concept.data.n_classes)
+
+        super().__init__(
+            n_features=first_stream.n_features,
+            n_classes=n_classes,
+            n_outputs=first_stream.n_outputs,
+            task=first_stream.task,
+        )
+
+        self.n_samples = concept_segments[-1].segment_end - concept_segments[0].segment_start
+
+        self.current_sample_idx = concept_segments[0].segment_start
+        self.in_prev_window = False
+        self.in_next_window = False
+        self.seg_idx = 0
+
+    def __iter__(self) -> Iterator[Tuple[int, int]]:
+        rng = check_random_state(self.seed)
+        stream_iterators = {seg.concept.name: iter(seg.concept.data) for seg in self.concept_segments}
+
+        while True:
+            # If we are within the window_size of the previous drift, we have a chance of drawing from the
+            # previous concept.
+            current_seg = self.concept_segments[self.seg_idx]
+            observation_seg_idx = self.seg_idx
+            if self.in_prev_window:
+                width = self.drifts[self.seg_idx - 1]
+                v = -4.0 * float(self.current_sample_idx - current_seg.segment_start) / (float(width) / 2)
+                probability = 1.0 / (1.0 + np.exp(v))
+                # This is the probability of the second (current) concept
+                # so chance of rolling above is the probability of previous segment.
+                if rng.rand() > probability:
+                    observation_seg_idx -= 1
+
+                # Don't need to check after the width.
+                if self.current_sample_idx - current_seg.segment_start > width / 2:
+                    self.in_prev_window = False
+
+            elif self.in_next_window:
+                width = self.drifts[self.seg_idx]
+                v = -4.0 * float(self.current_sample_idx - current_seg.segment_end) / (float(width) / 2)
+                probability = 1.0 / (1.0 + np.exp(v))
+                # This is the probability of the second (next) concept
+                # so chance of rolling below is the probability of the next segment.
+                if rng.rand() <= probability:
+                    observation_seg_idx += 1
+
+            observation_seg = self.concept_segments[observation_seg_idx]
+            stream = stream_iterators[observation_seg.concept.name]
+
+            try:
+                yield next(stream)
+            except StopIteration:
+                return
+
+            self.current_sample_idx += 1
+            if self.current_sample_idx >= self.n_samples:
+                break
+            next_seg = False
+            if self.current_sample_idx > current_seg.segment_end:
+                self.seg_idx += 1
+                next_seg = True
+                self.in_next_window = False
+
+            # Handle drift windows
+            width = self.drifts[self.seg_idx] if self.seg_idx < len(self.drifts) else 0
+            if width > 1:
+                if next_seg:
+                    self.in_prev_window = True
+                elif self.current_sample_idx >= current_seg.segment_end - width / 2:
+                    self.in_next_window = True
