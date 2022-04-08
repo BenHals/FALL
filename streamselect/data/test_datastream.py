@@ -360,7 +360,7 @@ def test_concept_segment_datastream_2() -> None:
         assert y == test_against[t][1]
 
 
-class mock_stream(SyntheticDataset):
+class MockStream(SyntheticDataset):
     def __init__(self, v: int):
         super().__init__(task=BINARY_CLF, n_features=1, n_classes=3, n_outputs=1)
         self.v = v
@@ -376,9 +376,9 @@ def test_concept_segment_datastream_3() -> None:
     Test abrupt predictions with mock class.
     """
     seed = 42
-    s0 = mock_stream(v=0)
-    s1 = mock_stream(v=1)
-    s2 = mock_stream(v=2)
+    s0 = MockStream(v=0)
+    s1 = MockStream(v=1)
+    s2 = MockStream(v=2)
 
     c0 = Concept(s0, "0")
     c1 = Concept(s1, "1")
@@ -431,9 +431,9 @@ def test_concept_segment_datastream_4() -> None:
     Test gradual predictions with mock class.
     """
     seed = 42
-    s0 = mock_stream(v=0)
-    s1 = mock_stream(v=1)
-    s2 = mock_stream(v=2)
+    s0 = MockStream(v=0)
+    s1 = MockStream(v=1)
+    s2 = MockStream(v=2)
 
     c0 = Concept(s0, "0")
     c1 = Concept(s1, "1")
