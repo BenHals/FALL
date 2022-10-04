@@ -4,7 +4,8 @@ import abc
 from enum import Enum
 from math import sqrt
 
-from river.stats import RollingVar, Var
+from river import utils
+from river.stats import Var
 
 
 class DistributionTypes(Enum):
@@ -67,7 +68,7 @@ class GaussianDistribution(BaseDistribution):
         self.distribution_type = DistributionTypes.GAUSSIAN
         self.is_rolling = self.memory_size > 0
         if self.is_rolling:
-            self.var = RollingVar(window_size=memory_size)
+            self.var = utils.Rolling(Var(), window_size=memory_size)
         else:
             self.var = Var()
 

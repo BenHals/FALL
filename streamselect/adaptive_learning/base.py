@@ -5,7 +5,7 @@ from typing import Callable, Deque, Dict, List, Optional, Set, Tuple, Union
 
 from river.base import Classifier, DriftDetector
 from river.base.typing import ClfTarget
-from river.utils import pure_inference_mode
+from river.compose import pure_inference_mode
 
 from streamselect.adaptive_learning.buffer import SupervisedUnsupervisedBuffer
 from streamselect.adaptive_learning.classifier_adaptation import (
@@ -608,8 +608,7 @@ def get_constant_max_buffer_scheduler() -> Callable[[float, State, Optional[Obse
 def get_increasing_buffer_scheduler(
     increase_rate: float = 1.0,
 ) -> Callable[[float, State, Optional[Observation]], float]:
-    """Returns a buffer timeout scheduler which always
-    sets the buffer_timeout to be max."""
+    """Returns a buffer timeout scheduler which increases the buffer time as more weight is seen."""
 
     def get_buffer_timeout(
         buffer_timeout_max: float, active_state: State, observation: Optional[Observation] = None
