@@ -41,10 +41,12 @@ class PerformanceMonitor:
         self.deletions: list[int] = []
         self.merges: dict[int, int] = {}
         self.repository: dict[int, State] = {}
+        self.concept_occurences: dict[str, int] = {}
+        self.transition_matrix: dict[str, dict[str, int]] = {}
 
-    def step_reset(self, initial_active_state_id: int) -> None:
+    def step_reset(self, initial_active_state: State) -> None:
         """Reset monitoring on taking a new step."""
-        self.initial_active_state_id = initial_active_state_id
+        self.set_initial_active_state(initial_active_state)
         self.in_drift = False
         self.in_warning = False
         self.made_transition = False
@@ -64,6 +66,114 @@ class PerformanceMonitor:
         self.background_in_drift = False
         self.background_in_warning = False
 
+    def set_initial_active_state(self, initial_active_state: State) -> None:
+        self.initial_active_state_id = initial_active_state.state_id
+        if self.initial_active_state_id not in self.repository:
+            self.repository[self.initial_active_state_id] = initial_active_state
+
+    def set_final_active_state(self, final_active_state: State) -> None:
+        self.final_active_state_id = final_active_state.state_id
+        if self.final_active_state_id not in self.repository:
+            self.repository[self.final_active_state_id] = final_active_state
+
+    
+    def add_to_transition_matrix(self, init_s: int, curr_s: int, matrix: dict[str, dict[str, int]], weight: int=1) -> dict[str, dict[str, int]]:
+        matrix[str(init_s)][str(curr_s)] = matrix[str(init_s)].get(str(curr_s), 0) + weight
+        matrix[str(init_s)]['total'] += weight
+        return matrix
+
+    def record_transition(self, initial_state: int, final_state: int) -> None:
+        """ Record an observation to observation level transition from the initial_state to the current state.
+        Depends on if a drift was detected, or if in warning which records are updated.
+        """
+        if initial_state in self.deletions or initial_state is None:
+            if initial_state in self.merges:
+                while initial_state in self.merges:
+                    initial_state = self.merges[initial_state]
+            else:
+                raise ValueError("Recording transition from deleted state")
+
+        created_new_state = False
+        if str(initial_state) not in self.transition_matrix:
+            self.transition_matrix[str(initial_state)] = {}
+            self.transition_matrix[str(initial_state)]['total'] = 0
+        if str(final_state) not in self.transition_matrix:
+            self.transition_matrix[str(final_state)] = {}
+            self.transition_matrix[str(final_state)]['total'] = 0
+            created_new_state = True
+
+        self.add_to_transition_matrix(initial_state, final_state, self.transition_matrix)
+
+    def delete_merge_state(self, merge_from: str, merge_into: str) -> None:
+        # Handle merging transition states, which are
+        # not in the repository
+        if 'T' not in str(merge_from):
+            self.repository.pop(int(merge_from), 0)
+            self.deletions.append(int(merge_from))
+
+        # Need to merge from transition matrix
+        # First merge transitions from merge_from into those from
+        transitions_from = self.transition_matrix.pop(str(merge_from), {})
+        new_transitions = self.transition_matrix.setdefault(str(merge_into), {'total': 0})
+        for to_id in transitions_from:
+            if to_id == "total":
+                continue
+            n_trans_merge = transitions_from[to_id]
+            n_trans_into = new_transitions.setdefault(to_id, 0)
+            new_transitions[to_id] = n_trans_merge + n_trans_into
+            new_transitions['total'] += n_trans_merge
+
+        # Then merge transitions into this state
+        # We delete the entry and add to entry for merge_into
+        for from_state in list(self.transition_matrix.keys()):
+            n_trans_merge = self.transition_matrix[from_state].pop(str(merge_from), 0)
+            n_trans_to = self.transition_matrix[from_state].setdefault(str(merge_into), 0)
+            self.transition_matrix[from_state][str(merge_into)] = n_trans_merge + n_trans_to
+
+        merge_from_occurences = self.concept_occurences.pop(merge_from, 0)
+        self.concept_occurences[merge_into] = self.concept_occurences.get(merge_into, 0) + merge_from_occurences
+
+    def get_prev_state_from_transitions(self, state_id: int) -> tuple[int, str, str]:
+        possible_previous_states: list[tuple[int, str]] = [(0, 'T')]
+        for prev_id in self.repository.keys():
+            if prev_id == state_id or prev_id not in self.transition_matrix:
+                continue
+            if state_id in self.transition_matrix[str(prev_id)]:
+                n_trans = self.transition_matrix[str(prev_id)][str(state_id)]
+                possible_previous_states.append((n_trans, str(prev_id)))
+        prev_state_count, prev_state = max(possible_previous_states, key=lambda x: x[0])
+        prev_state_transition = f"T-{prev_state}"
+        return (prev_state_count, prev_state, prev_state_transition)
+
+    def delete_into_transition_state(self, delete_id: int) -> str:
+        """ Merge a state into a generic transition state following the previous state.
+        In many cases, i.e., gradual drift between state 0 -> state 1, there will be some
+        transition state between them which has no meaning. We don't want to store all of these
+        states, as they have no individual meaning, but we want to store the idea that there is
+        some generic transition following state 0 and going to state 1. S0 -> T0 -> S1.
+
+        So if we see S0->S2->S1 and decide S2 was only a transition, we delete it and merge its
+        transitions into T-0.
+
+        Returns what the delete_id turned into so we can update transitions.
+        (e.g., returns T-0 rather than 2)
+        """
+
+        # First we need to work out what the previous state was, as we don't store this
+        # (maybe we should).
+        # We can find this as an entry in the transition matrix.
+        # Should only be one, but we handle if there are multiple. We take the max num transitions
+        # to be the previous state
+        prev_state_count, prev_state, prev_state_transition = self.get_prev_state_from_transitions(delete_id)
+
+        init_state = prev_state_transition
+        self.delete_merge_state(str(delete_id), init_state)
+
+        # We create a transition state for all states, so need to also
+        # merge the one for the delete state.
+        self.delete_merge_state(f"T-{delete_id}", init_state)
+
+        return init_state
 
 class BaseAdaptiveLearner(Classifier, abc.ABC):
     """A base adaptive learning class."""
@@ -343,7 +453,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
     def step(self, observation: Observation) -> None:
         """Update internal state"""
-        self.performance_monitor.step_reset(self.active_state_id)
+        self.performance_monitor.step_reset(self.get_active_state())
 
         self.performance_monitor.last_observation = observation
 
@@ -392,7 +502,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
                 self.performance_monitor.made_transition = True
 
         self.evaluate_background_state(transitioned=self.performance_monitor.made_transition)
-        self.performance_monitor.final_active_state_id = self.active_state_id
+        self.performance_monitor.set_final_active_state(self.get_active_state())
 
     def evaluate_background_state(self, transitioned: bool) -> None:
         """Step the background state, and reset if needed."""
@@ -573,6 +683,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.repository.add_transition(
             current_active_state, next_active_state, in_drift=in_drift, in_warning=in_warning
         )
+        self.performance_monitor.record_transition(current_active_state.state_id, next_active_state.state_id)
 
         self.transition_reset(current_active_state.state_id, next_active_state.state_id, in_drift, in_warning)
 
