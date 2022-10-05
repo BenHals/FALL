@@ -70,7 +70,7 @@ def make_stream_concepts(
 
         start = end + 1
         end = start + segment_length - 1
-        segment = ConceptSegment(segment_concept, start, end, recurrence_count[segment_concept.name])
+        segment = ConceptSegment(segment_concept, start, end, recurrence_count[segment_concept.name], concept_idx)
         stream_concepts.append(segment)
         recurrence_count[segment_concept.name] += 1
 
@@ -133,6 +133,12 @@ class ConceptSegmentDataStream(Dataset):
         self.in_prev_window = False
         self.in_next_window = False
         self.seg_idx = 0
+    
+    def get_initial_concept(self) -> int:
+        return self.concept_segments[0].concept_idx
+    
+    def get_last_image(self) -> np.ndarray:
+        return np.zeros((200, 200))
 
     def __iter__(self) -> Iterator[Tuple[int, int]]:
         rng = check_random_state(self.seed)

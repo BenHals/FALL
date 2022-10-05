@@ -7,7 +7,7 @@ from streamselect.data.datastream import ConceptSegmentDataStream, make_stream_c
 from streamselect.data.synthetic.wind_sim import WindSimGenerator
 from streamselect.data.transition_patterns import circular_transition_pattern
 from streamselect.data.utils import Concept, ConceptSegment
-from streamselect.evaluation.monitoring import run_monitor
+from streamselect.evaluation.monitoring import Monitor
 from streamselect.repository import AbsoluteValueComparer
 
 s0 = WindSimGenerator(concept=0)
@@ -63,5 +63,5 @@ if __name__ == "__main__":
     #     learner=HoeffdingTreeSHAPClassifier)
 
     # classifier_baseline = AdaptiveRandomForestClassifier()
-
-    run_monitor(datastream, classifier, baseline)
+    monitor = Monitor()
+    monitor.run_monitor(datastream, classifier, baseline)

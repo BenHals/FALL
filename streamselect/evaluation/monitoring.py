@@ -1,7 +1,7 @@
 import argparse
 import logging
 from collections import deque
-from typing import List
+from typing import List, Any
 
 import matplotlib
 import matplotlib.animation as animation
@@ -13,8 +13,10 @@ import pandas as pd
 from matplotlib.collections import LineCollection
 from river.metrics import Accuracy, CohenKappa
 from river.utils import Rolling
+from river.base import Classifier
 
-from streamselect.adaptive_learning.base import PerformanceMonitor
+from streamselect.adaptive_learning.base import PerformanceMonitor, BaseAdaptiveLearner
+from streamselect.data.datastream import ConceptSegmentDataStream
 
 Vector = List[float]
 
@@ -38,7 +40,7 @@ def numpy_fill(arr: np.ndarray) -> np.ndarray:
     return out
 
 
-def handle_merges_and_deletion(history, merges, deletions):
+def handle_merges_and_deletion(history: np.ndarray, merges: dict[int, int], deletions: list[int]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     merge_history = np.copy(history)
     for m_init in merges:
         m_to = merges[m_init]
@@ -58,17 +60,16 @@ def handle_merges_and_deletion(history, merges, deletions):
     return history, merge_history.astype(int), repair_history.astype(int)
 
 
-def segment_history(history, ex):
+def segment_history(history: np.ndarray, ex: int) -> np.ndarray:
     diff = np.insert(history[1:] == history[:-1], 0, False)
     idx = (np.arange(history.shape[0]) - history.shape[0]) + ex
     starts = np.vstack((history[~diff], idx[~diff])).T
     return starts
 
 
-def plot_TM(ax, classifier, concept_colors, c_init):
-    T = classifier.concept_transitions_standard
+def plot_TM(ax: plt.axis, active_state_id: int, T: dict[str, dict[str, int]], repository: dict[int, Any], concept_colors: list[str], c_init: int) -> None:
     G = nx.DiGraph()
-    for ID in classifier.state_repository:
+    for ID in repository:
         G.add_node(ID)
         G.add_edge(ID, ID)
         G.add_node(f"T-{ID}")
@@ -88,7 +89,7 @@ def plot_TM(ax, classifier, concept_colors, c_init):
             ID = 5
         node_colors.append(concept_colors[(ID + c_init) % len(concept_colors)])
         node_edges.append(
-            concept_colors[(ID + c_init) % len(concept_colors)] if ID != classifier.active_state_id else "black"
+            concept_colors[(ID + c_init) % len(concept_colors)] if ID != active_state_id else "black"
         )
 
     emit_edge_labels = {(n1, n2): f"{d['label']:.0f}" for n1, n2, d in G.edges(data=True) if n1 != n2}
@@ -98,30 +99,30 @@ def plot_TM(ax, classifier, concept_colors, c_init):
 
 
 class Monitor:
-    def __init__(self):
+    def __init__(self) -> None:
         self.history_len = 500
         self.count = 0
+        self.ex = -1
         self.concept_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-        self.merges = {}
-        self.deletions = []
-        self.print(concept_colors)
+        self.merges: dict[int, int] = {}
+        self.deletions: list[int] = []
         self.acc = Accuracy()
         self.acc_baseline = Accuracy()
-        self.x_history = deque(maxlen=self.history_len)
-        self.acc_history = deque(maxlen=self.history_len)
-        self.acc_c_history = deque(maxlen=self.history_len)
-        self.baseline_history = deque(maxlen=self.history_len)
+        self.x_history: deque[int] = deque(maxlen=self.history_len)
+        self.acc_history: deque[float] = deque(maxlen=self.history_len)
+        self.acc_c_history: deque[float] = deque(maxlen=self.history_len)
+        self.baseline_history: deque[float] = deque(maxlen=self.history_len)
         self.likelihood_history = {}
         self.likelihood_segments = []
         self.likelihood_segment_colors = []
-        self.gt_segments = deque(maxlen=self.history_len)
-        self.gt_history = deque(maxlen=self.history_len)
-        self.gt_colors = deque(maxlen=self.history_len)
-        self.sys_segments = deque(maxlen=self.history_len)
-        self.sys_history = deque(maxlen=self.history_len)
-        self.sys_colors = deque(maxlen=self.history_len)
-        self.sys_nomr_segments = deque(maxlen=self.history_len)
-        self.sys_nomr_colors = deque(maxlen=self.history_len)
+        self.gt_segments: deque[Any] = deque(maxlen=self.history_len)
+        self.gt_history: deque[Any] = deque(maxlen=self.history_len)
+        self.gt_colors: deque[Any] = deque(maxlen=self.history_len)
+        self.sys_segments: deque[Any] = deque(maxlen=self.history_len)
+        self.sys_history: deque[Any] = deque(maxlen=self.history_len)
+        self.sys_colors: deque[Any] = deque(maxlen=self.history_len)
+        self.sys_nomr_segments: deque[Any] = deque(maxlen=self.history_len)
+        self.sys_nomr_colors: deque[Any] = deque(maxlen=self.history_len)
         self.recall = 0
         self.precision = 0
         self.F1 = 0
@@ -135,13 +136,16 @@ class Monitor:
         self.rolling_acc = Rolling(Accuracy(), window_size=100)
         self.kappa = CohenKappa()
         self.drift_count = 1000
+        self.current_concept = 0
+
+        self.T: dict[str, dict[str, int]] = {}
 
     def plot(
         self,
         frame,
-        stream,
-        classifier,
-        classifier_baseline,
+        stream_iter: ConceptSegmentDataStream,
+        classifier: BaseAdaptiveLearner,
+        classifier_baseline: Classifier,
         history_len,
         im,
         acc_line,
@@ -153,10 +157,14 @@ class Monitor:
         likelihood_lc,
         text_obs,
         flush=False,
-    ):
-        X, y = next(stream)
+    ) -> None:
+        X, y = next(stream_iter)
         if X is not None:
+            self.ex += 1
             p = classifier.predict_one(X)
+            if p is None:
+                p = 0
+            print(X, y, p)
             try:
                 with np.errstate(all="ignore"):
                     p_base = classifier_baseline.predict_one(X)
@@ -171,11 +179,11 @@ class Monitor:
             adwin_likelihood_estimate.update(
                 {perf_monitor.initial_active_state_id: perf_monitor.active_state_relevance}
             )
-            self.acc.update(p[0], y[0])
-            self.acc_baseline.update(p_base[0], y[0])
-            self.rolling_acc.update(p[0], y[0])
-            self.kappa.update(p[0], y[0])
-            self.x_history.append(classifier.ex)
+            self.acc.update(p, y)
+            self.acc_baseline.update(p_base, y)
+            self.rolling_acc.update(p, y)
+            self.kappa.update(p, y)
+            self.x_history.append(self.ex)
             self.acc_history.append(self.acc.get())
             self.baseline_history.append(self.acc_baseline.get())
             self.acc_c_history.append(self.rolling_acc.get())
@@ -183,7 +191,7 @@ class Monitor:
             # Update concept history
             for concept_id in adwin_likelihood_estimate:
                 concept_hist = self.likelihood_history.setdefault(concept_id, deque(maxlen=history_len))
-                concept_hist.append((classifier.ex, adwin_likelihood_estimate[concept_id]))
+                concept_hist.append((self.ex, adwin_likelihood_estimate[concept_id]))
 
             # remove any deleted concepts
             for concept_id in list(self.likelihood_history.keys()):
@@ -199,11 +207,11 @@ class Monitor:
                     seg.append((px, py))
                 likelihood_segments.append(seg)
                 likelihood_segment_colors.append(
-                    self.concept_colors[(concept_id + stream.init_concept) % len(self.concept_colors)]
+                    self.concept_colors[(concept_id) % len(self.concept_colors)]
                 )
 
-            curr_gt_concept = stream.concept
-            curr_sys_concept = classifier.active_state_id
+            curr_gt_concept = self.stream.concept_segments[self.stream.seg_idx].concept_idx
+            curr_sys_concept = perf_monitor.initial_active_state_id
             self.gt_history.append(curr_gt_concept)
             self.sys_history.append(curr_sys_concept)
             if curr_gt_concept not in self.concept_cm:
@@ -211,7 +219,7 @@ class Monitor:
                 self.gt_totals[curr_gt_concept] = 0
             if curr_sys_concept not in self.concept_cm[curr_gt_concept]:
                 self.concept_cm[curr_gt_concept][curr_sys_concept] = 0
-            if curr_sys_concept not in sys_totals:
+            if curr_sys_concept not in self.sys_totals:
                 self.sys_totals[curr_sys_concept] = 0
             self.concept_cm[curr_gt_concept][curr_sys_concept] += 1
             self.gt_totals[curr_gt_concept] += 1
@@ -222,45 +230,46 @@ class Monitor:
             F1 = 2 * ((precision * recall) / (precision + recall))
 
             np_sys_history = np.array(self.sys_history)
-            self.merges.update(classifier.merges if hasattr(classifier, "merges") else {})
-            deletions += classifier.deletions if hasattr(classifier, "deletions") else []
-            sys_h, sys_merge, sys_repair = handle_merges_and_deletion(np_sys_history, self.merges, deletions)
+            self.merges.update(perf_monitor.merges if hasattr(classifier, "merges") else {})
+            self.deletions += perf_monitor.deletions if hasattr(classifier, "deletions") else []
+            sys_h, sys_merge, sys_repair = handle_merges_and_deletion(np_sys_history, self.merges, self.deletions)
 
-            gt_seg_starts = segment_history(np.array(self.gt_history), classifier.ex)
+            gt_seg_starts = segment_history(np.array(self.gt_history), self.ex)
             gt_segments = []
             gt_colors = []
-            seg_end = classifier.ex
+            seg_end = self.ex
             for line in gt_seg_starts[::-1]:
                 gt_segments.append([[line[1], 0], [seg_end, 0]])
                 gt_colors.append(self.concept_colors[line[0] % len(self.concept_colors)])
                 seg_end = line[1]
 
-            sys_seg_starts = segment_history(sys_repair, classifier.ex)
+            sys_seg_starts = segment_history(sys_repair, self.ex)
             sys_segments = []
             sys_colors = []
-            seg_end = classifier.ex
+            seg_end = self.ex
             for line in sys_seg_starts[::-1]:
                 sys_segments.append([[line[1], 0.75], [seg_end, 0.75]])
-                sys_colors.append(self.concept_colors[(line[0] + stream.init_concept) % len(self.concept_colors)])
+                sys_colors.append(self.concept_colors[(line[0]) % len(self.concept_colors)])
                 seg_end = line[1]
 
-            sys_nomr_seg_starts = segment_history(sys_h, classifier.ex)
+            sys_nomr_seg_starts = segment_history(sys_h, self.ex)
 
-            seg_end = classifier.ex
+            seg_end = self.ex
             for line in sys_nomr_seg_starts[::-1]:
                 self.sys_nomr_segments.append([[line[1], 0.25], [seg_end, 0.25]])
                 self.sys_nomr_colors.append(
-                    self.concept_colors[(line[0] + stream.init_concept) % len(self.concept_colors)]
+                    self.concept_colors[(line[0]) % len(self.concept_colors)]
                 )
                 seg_end = line[1]
 
-            classifier.partial_fit(X, y, classes=list(range(0, 21)))
-            classifier_baseline.partial_fit(X, y, classes=list(range(0, 21)))
-        z = stream.get_last_image()
+            classifier.learn_one(X, y)
+            classifier_baseline.learn_one(X, y)
+
+        z = self.stream.get_last_image()
         artists = []
-        if count % 50 == 0:
-            self.sample_text.set_text(f"Sample: {classifier.ex}")
-            self.next_drift_text.set_text(f"Next Drift in: {1000 - (classifier.ex % 1000)}")
+        if self.count % 50 == 0:
+            self.sample_text.set_text(f"Sample: {self.ex}")
+            self.next_drift_text.set_text(f"Next Drift in: {1000 - (self.ex % 1000)}")
             self.acc_text.set_text(f"Accuracy: {self.acc.get():.2%}")
             self.r_acc_text.set_text(f"Rolling: {self.rolling_acc.get():.2%}")
             self.baseline_text.set_text(f"Baseline: {self.acc_baseline.get():.2%}")
@@ -277,11 +286,11 @@ class Monitor:
                 f"Concept Likelihoods: {', '.join('{0}: {1:.2%}'.format(k, v) for k,v in adwin_likelihood_estimate.items())}"
             )
             self.merge_text.set_text(f"Merges: {' '.join('{0} -> {1}'.format(k, v) for k,v in self.merges.items())}")
-            self.deletion_text.set_text(f"Deletions: {str(deletions)}")
+            self.deletion_text.set_text(f"Deletions: {str(self.deletions)}")
 
-        if last_state != classifier.active_state_id:
+        if self.last_state != classifier.active_state_id:
             self.ax8.clear()
-            plot_TM(self.ax8, classifier, self.concept_colors, stream.init_concept)
+            plot_TM(self.ax8, perf_monitor.initial_active_state_id, self.T, perf_monitor.repository, self.concept_colors, self.stream.get_initial_concept())
             self.ax8.relim()
             self.ax8.autoscale_view(False, True, True)
             x_lim = self.ax8.get_xlim()
@@ -293,20 +302,20 @@ class Monitor:
             last_state = classifier.active_state_id
             self.fig.canvas.resize_event()
 
-        if count % 12 == 0:
+        if self.count % 12 == 0:
             # if count % 1 == 0:
             # ax.clear()
             # plt.clf()
 
             # plt.imshow(z, norm = matplotlib.colors.Normalize(0, 255))
             im.set_data(z)
-        if count % 2 == 0:
+        if self.count % 2 == 0:
             acc_line.set_data(list(self.x_history), list(self.acc_history))
             acc_c_line.set_data(list(self.x_history), list(self.acc_c_history))
             baseline_line.set_data(list(self.x_history), list(self.baseline_history))
-            self.ax2.set_xlim([max(0, classifier.ex - (history_len - 1)), max(history_len, classifier.ex + 1)])
-            self.ax3.set_xlim([max(0, classifier.ex - (history_len - 1)), max(history_len, classifier.ex + 1)])
-            self.ax6.set_xlim([max(0, classifier.ex - (history_len - 1)), max(history_len, classifier.ex + 1)])
+            self.ax2.set_xlim([max(0, self.ex - (history_len - 1)), max(history_len, self.ex + 1)])
+            self.ax3.set_xlim([max(0, self.ex - (history_len - 1)), max(history_len, self.ex + 1)])
+            self.ax6.set_xlim([max(0, self.ex - (history_len - 1)), max(history_len, self.ex + 1)])
             gt_lc.set_segments(gt_segments)
             gt_lc.set_color(gt_colors)
             sys_lc.set_segments(sys_segments)
@@ -327,14 +336,13 @@ class Monitor:
             *text_obs.values(),
         ]
 
-        count += 1
-        if count >= self.drift_count:
+        self.count += 1
+        if self.count >= self.drift_count:
             self.current_concept += 1
-            stream.set_concept((self.current_concept % self.n_concepts) + 1)
-            count = 0
+            self.count = 0
         return artists
 
-    def run_monitor(self, stream, classifier, classifier_baseline) -> None:
+    def run_monitor(self, stream: ConceptSegmentDataStream, classifier: BaseAdaptiveLearner, classifier_baseline) -> None:
 
         self.fig = plt.figure(figsize=(10, 5))
         gs = self.fig.add_gridspec(7, 5, height_ratios=[0.5, 0.5, 0.5, 1, 1, 1, 1], width_ratios=[1, 1, 1, 1, 1.5])
@@ -464,6 +472,7 @@ class Monitor:
             "deletion_text": self.deletion_text,
         }
         gs.tight_layout(self.fig, rect=[0, 0, 1, 1], w_pad=0.05, h_pad=0.05)
+        self.stream = stream
         stream_iter = iter(stream)
         ani = animation.FuncAnimation(
             self.fig,

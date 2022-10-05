@@ -5,7 +5,7 @@ from enum import Enum
 from math import sqrt
 
 from river import utils
-from river.stats import Var
+from river.stats import Var, Mean
 
 
 class DistributionTypes(Enum):
@@ -69,19 +69,19 @@ class GaussianDistribution(BaseDistribution):
         self.is_rolling = self.memory_size > 0
         if self.is_rolling:
             self.var = utils.Rolling(Var(), window_size=memory_size)
+            self.mean_stat = utils.Rolling(Mean(), window_size=memory_size)
         else:
             self.var = Var()
+            self.mean_stat = Mean()
 
     def learn_one(self, val: float) -> None:
         self.var.update(val)
+        self.mean_stat.update(val)
 
     @property
     def mean(self) -> float:
         """Gaussian mean."""
-        if self.is_rolling:
-            # pylint: disable-next=W0212
-            return self.var._rolling_mean.get()  # type: ignore
-        return self.var.mean.get()  # type: ignore
+        return self.mean_stat.get()  # type: ignore
 
     @property
     def stdev(self) -> float:

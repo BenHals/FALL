@@ -30,12 +30,13 @@ class Concept:
 
 
 class ConceptSegment:
-    def __init__(self, concept_stream: Concept, segment_start: int, segment_end: int, recurrence_count: int):
+    def __init__(self, concept_stream: Concept, segment_start: int, segment_end: int, recurrence_count: int, concept_idx: int = 0):
         """A container class representing a concept segment."""
         self.concept = concept_stream
         self.segment_start = segment_start
         self.segment_end = segment_end
         self.recurrence_count = recurrence_count
+        self.concept_idx = concept_idx
 
     def __str__(self) -> str:
         return f"{self.concept}r{self.recurrence_count}:{self.segment_start}->{self.segment_end}"

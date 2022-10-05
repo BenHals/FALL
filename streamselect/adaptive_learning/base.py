@@ -38,6 +38,9 @@ class PerformanceMonitor:
         self.last_observation: Optional[Observation] = None
         self.last_trained_observation: Optional[Observation] = None
         self.last_drift: Optional[DriftInfo] = None
+        self.deletions: list[int] = []
+        self.merges: dict[int, int] = {}
+        self.repository: dict[int, State] = {}
 
     def step_reset(self, initial_active_state_id: int) -> None:
         """Reset monitoring on taking a new step."""
@@ -458,8 +461,9 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         state_relevance = self.representation_comparer.get_state_rep_similarity(state, state_representation)
 
-        in_drift, in_warning = drift_detector.update(state_relevance)  # type: ignore
-
+        _ = drift_detector.update(state_relevance)  # type: ignore
+        in_drift = drift_detector.drift_detected
+        in_warning = False
         # turn off detections which do not match mode
         if in_drift:
             print(state_relevance, get_drift_detector_estimate(drift_detector))
@@ -588,7 +592,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             else self.active_representation_constructor(s_id)
             for s_id in representation_ids
         }
-        self.drift_detector.reset()
+        self.drift_detector._reset()
         self.repository.apply_memory_management()
         self.reidentification_schedule.transition_reset(self.supervised_timestep)
 

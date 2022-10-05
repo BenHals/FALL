@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Callable
 
 from river import utils
+from river.compose import pure_inference_mode
 from river.base import Classifier
 from river.base.typing import ClfTarget
 from river.drift import ADWIN
@@ -75,7 +76,7 @@ class State:  # pylint: disable=too-few-public-methods
             )
             # Make a prediction without training statistics,
             # to avoid training twice.
-            with utils.pure_inference_mode():
+            with pure_inference_mode():
                 p = self.classifier.predict_one(supervised_observation.x)
                 supervised_observation.add_prediction(p, self.state_id)
             representation.learn_one(supervised_observation)
