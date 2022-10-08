@@ -1,4 +1,4 @@
-from river import synth
+from river.datasets import synth
 from river.drift import ADWIN
 from river.tree import HoeffdingTreeClassifier
 

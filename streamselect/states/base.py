@@ -3,10 +3,9 @@ from __future__ import annotations
 
 from typing import Callable
 
-from river import utils
-from river.compose import pure_inference_mode
 from river.base import Classifier
 from river.base.typing import ClfTarget
+from river.compose import pure_inference_mode
 from river.drift import ADWIN
 
 from streamselect.concept_representations import (
@@ -160,7 +159,7 @@ class State:  # pylint: disable=too-few-public-methods
         self.in_concept_relevance_distribution.learn_one(active_state_relevance)
         self.in_concept_relevance_record.update(active_state_relevance)
         self.current_relevance_record.update(active_state_relevance)
-    
+
     def get_in_concept_relevance(self) -> float:
         return self.in_concept_relevance_record.estimation
 

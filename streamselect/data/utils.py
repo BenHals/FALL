@@ -1,5 +1,5 @@
-from river.datasets.base import Dataset
 import numpy as np
+from river.datasets.base import Dataset
 
 
 class Concept:
@@ -22,9 +22,9 @@ class Concept:
         self.data = data
         self.name = name
         self.max_n = max_n
-    
+
     def get_last_image(self) -> np.ndarray:
-        if hasattr(self.data, 'get_last_image'):
+        if hasattr(self.data, "get_last_image"):
             last_image = self.data.get_last_image()
             if last_image is not None:
                 return last_image
@@ -38,14 +38,21 @@ class Concept:
 
 
 class ConceptSegment:
-    def __init__(self, concept_stream: Concept, segment_start: int, segment_end: int, recurrence_count: int, concept_idx: int = 0):
+    def __init__(
+        self,
+        concept_stream: Concept,
+        segment_start: int,
+        segment_end: int,
+        recurrence_count: int,
+        concept_idx: int = 0,
+    ):
         """A container class representing a concept segment."""
         self.concept = concept_stream
         self.segment_start = segment_start
         self.segment_end = segment_end
         self.recurrence_count = recurrence_count
         self.concept_idx = concept_idx
-    
+
     def get_last_image(self) -> np.ndarray:
         return self.concept.get_last_image()
 

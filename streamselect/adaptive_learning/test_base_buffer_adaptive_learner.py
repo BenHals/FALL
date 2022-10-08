@@ -2,7 +2,7 @@ from typing import List, Optional
 
 import numpy as np
 from pytest import approx
-from river import synth
+from river.datasets import synth
 from river.drift import ADWIN
 from river.tree import HoeffdingTreeClassifier
 

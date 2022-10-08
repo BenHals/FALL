@@ -77,14 +77,8 @@ class PerformanceMonitor:
         if self.final_active_state_id not in self.repository:
             self.repository[self.final_active_state_id] = final_active_state
 
-    
-    def add_to_transition_matrix(self, init_s: int, curr_s: int, matrix: dict[str, dict[str, int]], weight: int=1) -> dict[str, dict[str, int]]:
-        matrix[str(init_s)][str(curr_s)] = matrix[str(init_s)].get(str(curr_s), 0) + weight
-        matrix[str(init_s)]['total'] += weight
-        return matrix
-
     def record_transition(self, initial_state: int, final_state: int) -> None:
-        """ Record an observation to observation level transition from the initial_state to the current state.
+        """Record an observation to observation level transition from the initial_state to the current state.
         Depends on if a drift was detected, or if in warning which records are updated.
         """
         if initial_state in self.deletions or initial_state is None:
@@ -94,35 +88,33 @@ class PerformanceMonitor:
             else:
                 raise ValueError("Recording transition from deleted state")
 
-        created_new_state = False
         if str(initial_state) not in self.transition_matrix:
             self.transition_matrix[str(initial_state)] = {}
-            self.transition_matrix[str(initial_state)]['total'] = 0
+            self.transition_matrix[str(initial_state)]["total"] = 0
         if str(final_state) not in self.transition_matrix:
             self.transition_matrix[str(final_state)] = {}
-            self.transition_matrix[str(final_state)]['total'] = 0
-            created_new_state = True
+            self.transition_matrix[str(final_state)]["total"] = 0
 
-        self.add_to_transition_matrix(initial_state, final_state, self.transition_matrix)
+        add_to_transition_matrix(initial_state, final_state, self.transition_matrix)
 
     def delete_merge_state(self, merge_from: str, merge_into: str) -> None:
         # Handle merging transition states, which are
         # not in the repository
-        if 'T' not in str(merge_from):
+        if "T" not in str(merge_from):
             self.repository.pop(int(merge_from), 0)
             self.deletions.append(int(merge_from))
 
         # Need to merge from transition matrix
         # First merge transitions from merge_from into those from
         transitions_from = self.transition_matrix.pop(str(merge_from), {})
-        new_transitions = self.transition_matrix.setdefault(str(merge_into), {'total': 0})
+        new_transitions = self.transition_matrix.setdefault(str(merge_into), {"total": 0})
         for to_id in transitions_from:
             if to_id == "total":
                 continue
             n_trans_merge = transitions_from[to_id]
             n_trans_into = new_transitions.setdefault(to_id, 0)
             new_transitions[to_id] = n_trans_merge + n_trans_into
-            new_transitions['total'] += n_trans_merge
+            new_transitions["total"] += n_trans_merge
 
         # Then merge transitions into this state
         # We delete the entry and add to entry for merge_into
@@ -135,8 +127,8 @@ class PerformanceMonitor:
         self.concept_occurences[merge_into] = self.concept_occurences.get(merge_into, 0) + merge_from_occurences
 
     def get_prev_state_from_transitions(self, state_id: int) -> tuple[int, str, str]:
-        possible_previous_states: list[tuple[int, str]] = [(0, 'T')]
-        for prev_id in self.repository.keys():
+        possible_previous_states: list[tuple[int, str]] = [(0, "T")]
+        for prev_id in self.repository:
             if prev_id == state_id or prev_id not in self.transition_matrix:
                 continue
             if state_id in self.transition_matrix[str(prev_id)]:
@@ -147,7 +139,7 @@ class PerformanceMonitor:
         return (prev_state_count, prev_state, prev_state_transition)
 
     def delete_into_transition_state(self, delete_id: int) -> str:
-        """ Merge a state into a generic transition state following the previous state.
+        """Merge a state into a generic transition state following the previous state.
         In many cases, i.e., gradual drift between state 0 -> state 1, there will be some
         transition state between them which has no meaning. We don't want to store all of these
         states, as they have no individual meaning, but we want to store the idea that there is
@@ -165,7 +157,7 @@ class PerformanceMonitor:
         # We can find this as an entry in the transition matrix.
         # Should only be one, but we handle if there are multiple. We take the max num transitions
         # to be the previous state
-        prev_state_count, prev_state, prev_state_transition = self.get_prev_state_from_transitions(delete_id)
+        _, _, prev_state_transition = self.get_prev_state_from_transitions(delete_id)
 
         init_state = prev_state_transition
         self.delete_merge_state(str(delete_id), init_state)
@@ -175,6 +167,7 @@ class PerformanceMonitor:
         self.delete_merge_state(f"T-{delete_id}", init_state)
 
         return init_state
+
 
 class BaseAdaptiveLearner(Classifier, abc.ABC):
     """A base adaptive learning class."""
@@ -550,7 +543,9 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         active_state = self.get_active_state()
         active_representation = self.active_window_state_representations[active_state.state_id]
-        in_drift, in_warning, active_state_relevance = self.perform_drift_detection(active_state, active_representation, self.drift_detector)
+        in_drift, in_warning, active_state_relevance = self.perform_drift_detection(
+            active_state, active_representation, self.drift_detector
+        )
         active_state.add_active_state_relevance(active_state_relevance)
         return in_drift, in_warning, active_state_relevance
 
@@ -708,7 +703,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             else self.active_representation_constructor(s_id)
             for s_id in representation_ids
         }
-        self.drift_detector._reset()
+        self.drift_detector._reset()  # pylint: disable=W0212
         self.repository.apply_memory_management()
         self.reidentification_schedule.transition_reset(self.supervised_timestep)
 
@@ -931,3 +926,11 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         self.buffer_timeout = buffer_timeout
         self.buffer.supervised_buffer_timeout = buffer_timeout
         self.buffer.unsupervised_buffer_timeout = buffer_timeout
+
+
+def add_to_transition_matrix(
+    init_s: int, curr_s: int, matrix: dict[str, dict[str, int]], weight: int = 1
+) -> dict[str, dict[str, int]]:
+    matrix[str(init_s)][str(curr_s)] = matrix[str(init_s)].get(str(curr_s), 0) + weight
+    matrix[str(init_s)]["total"] += weight
+    return matrix

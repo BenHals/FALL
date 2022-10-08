@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from river import synth
+from river.datasets import synth
 from river.drift import ADWIN
 from river.tree import HoeffdingTreeClassifier
 
@@ -131,10 +131,11 @@ def test_base_predictions() -> None:
         baseline_state.learn_one(ob)
         p_b = baseline_state.predict_one(ob)
         baseline_active_representation.learn_one(ob)
-        in_drift, _ = baseline_detector.update(
+        _ = baseline_detector.update(
             baseline_comparer.get_state_rep_similarity(baseline_state, baseline_active_representation)  # type: ignore
         )
 
+        in_drift = baseline_detector.drift_detected
         if in_drift:
             break
 
@@ -212,9 +213,9 @@ def test_drift_detection() -> None:
             baseline_active_representation.meta_feature_values[0]
             == al_classifier.background_state_active_representation.meta_feature_values[0]
         )
-        assert baseline_relevance == al_classifier.performance_monitor.active_state_relevance
+        assert baseline_relevance == al_classifier.performance_monitor.active_state_last_relevance
         assert baseline_relevance == al_classifier.performance_monitor.background_state_relevance
-        in_drift, _ = baseline_detector.update(baseline_relevance)  # type: ignore
+        _ = baseline_detector.update(baseline_relevance)  # type: ignore
 
         assert baseline_detector.total == al_classifier.drift_detector.total  # type: ignore
 
@@ -237,9 +238,9 @@ def test_drift_detection() -> None:
             baseline_relevance = baseline_comparer.get_state_rep_similarity(
                 baseline_state, baseline_active_representation
             )
-            assert baseline_relevance == al_classifier.performance_monitor.active_state_relevance
-            in_drift, _ = baseline_detector.update(baseline_relevance)  # type: ignore
-
+            assert baseline_relevance == al_classifier.performance_monitor.active_state_last_relevance
+            _ = baseline_detector.update(baseline_relevance)  # type: ignore
+            in_drift = baseline_detector.drift_detected
             if in_drift:
                 found_drift = True
                 break
@@ -295,7 +296,7 @@ def test_drift_transition() -> None:
         baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
             baseline_c1_state, baseline_c1_active_representation
         )
-        in_drift, _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
+        _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
         assert not found_drift
         assert not al_classifier.performance_monitor.in_drift
         assert not al_classifier.performance_monitor.made_transition
@@ -314,9 +315,9 @@ def test_drift_transition() -> None:
         baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
             baseline_c1_state, baseline_c1_active_representation
         )
-        assert baseline_c1_relevance == al_classifier.performance_monitor.active_state_relevance
-        in_drift, _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
-
+        assert baseline_c1_relevance == al_classifier.performance_monitor.active_state_last_relevance
+        _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
+        in_drift = baseline_c1_detector.drift_detected
         if in_drift:
             found_drift = True
             drift_point = t
@@ -368,9 +369,9 @@ def test_drift_transition() -> None:
         baseline_c2_relevance = baseline_c2_comparer.get_state_rep_similarity(
             baseline_c2_state, baseline_c2_active_representation
         )
-        assert baseline_c2_relevance == al_classifier.performance_monitor.active_state_relevance
-        in_drift, _ = baseline_c2_detector.update(baseline_c2_relevance)  # type: ignore
-
+        assert baseline_c2_relevance == al_classifier.performance_monitor.active_state_last_relevance
+        _ = baseline_c2_detector.update(baseline_c2_relevance)  # type: ignore
+        in_drift = baseline_c2_detector.drift_detected
         if in_drift:
             found_drift = True
             drift_point = t

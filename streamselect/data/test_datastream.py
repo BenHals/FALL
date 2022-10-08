@@ -2,8 +2,7 @@ from collections import deque
 from typing import Counter, Deque, Iterator, List, Tuple
 
 from pytest import approx
-from river import synth
-from river.datasets import Bananas
+from river.datasets import Bananas, synth
 from river.datasets.base import BINARY_CLF, SyntheticDataset
 
 from streamselect.data.datastream import ConceptSegmentDataStream, make_stream_concepts

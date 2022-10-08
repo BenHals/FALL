@@ -13,6 +13,7 @@ def make_stream_concepts(
     max_segment_length: Optional[int],
     segment_length_ratio: float = 1.0,
     boost_first_occurence: float = 1.0,
+    segment_lengths: Optional[list[int]] = None,
 ) -> List[ConceptSegment]:
     """Returns a list of concept segments describing transitions in a given dataset,
     given a list of possible concepts and a transition pattern.
@@ -54,17 +55,27 @@ def make_stream_concepts(
     start = -1
     end = -1
     recurrence_count: Counter[str] = Counter()
+    segment_idx = 0
+
+    if segment_lengths is not None and len(segment_lengths) == 0:
+        segment_lengths = None
+
     for concept_idx in transition_pattern:
         segment_concept = concepts[concept_idx]
-        if segment_concept.data.n_samples is not None and segment_length_ratio > 0:
-            concept_length = int(segment_concept.data.n_samples * segment_length_ratio)
-        else:
-            assert (
-                max_segment_length is not None
-            ), "Max segment length cannot be None when concepts do not have a defined n_samples."
+        if segment_lengths is None:
+            if segment_concept.data.n_samples is not None and segment_length_ratio > 0:
+                concept_length = int(segment_concept.data.n_samples * segment_length_ratio)
+            else:
+                assert (
+                    max_segment_length is not None
+                ), "Max segment length cannot be None when concepts do not have a defined n_samples."
 
-            concept_length = max_segment_length
-        segment_length = min(concept_length, max_segment_length) if max_segment_length is not None else concept_length
+                concept_length = max_segment_length
+            segment_length = (
+                min(concept_length, max_segment_length) if max_segment_length is not None else concept_length
+            )
+        else:
+            segment_length = segment_lengths[segment_idx % len(segment_lengths)]
         if recurrence_count[segment_concept.name] == 0:
             segment_length = int(segment_length * boost_first_occurence)
 
@@ -73,6 +84,7 @@ def make_stream_concepts(
         segment = ConceptSegment(segment_concept, start, end, recurrence_count[segment_concept.name], concept_idx)
         stream_concepts.append(segment)
         recurrence_count[segment_concept.name] += 1
+        segment_idx += 1
 
     return stream_concepts
 
@@ -133,17 +145,16 @@ class ConceptSegmentDataStream(Dataset):
         self.in_prev_window = False
         self.in_next_window = False
         self.seg_idx = 0
-    
+
     def get_initial_concept(self) -> int:
         return self.concept_segments[0].concept_idx
-    
+
     def get_current_concept(self) -> ConceptSegment:
         return self.concept_segments[self.seg_idx]
-    
+
     def get_last_image(self) -> np.ndarray:
         current_segment = self.get_current_concept()
         return current_segment.get_last_image()
-        
 
     def __iter__(self) -> Iterator[Tuple[int, int]]:
         rng = check_random_state(self.seed)
