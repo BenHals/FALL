@@ -31,7 +31,7 @@ class PerformanceMonitor:
         self.in_warning: bool = False
         self.made_transition: bool = False
         self.final_active_state_id: int = -1
-        self.active_state_relevance: float = -1
+        self.active_state_last_relevance: float = -1
         self.background_in_drift: bool = False
         self.background_in_warning: bool = False
         self.background_state_relevance: float = -1
@@ -43,6 +43,7 @@ class PerformanceMonitor:
         self.repository: dict[int, State] = {}
         self.concept_occurences: dict[str, int] = {}
         self.transition_matrix: dict[str, dict[str, int]] = {}
+        self.state_relevances: dict[int, float] = {}
 
     def step_reset(self, initial_active_state: State) -> None:
         """Reset monitoring on taking a new step."""
@@ -51,7 +52,7 @@ class PerformanceMonitor:
         self.in_warning = False
         self.made_transition = False
         self.final_active_state_id = -1
-        self.active_state_relevance = -1
+        self.active_state_last_relevance = -1
         self.background_in_drift = False
         self.background_in_warning = False
         self.background_state_relevance = -1
@@ -453,7 +454,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
     def step(self, observation: Observation) -> None:
         """Update internal state"""
-        self.performance_monitor.step_reset(self.get_active_state())
+        active_state = self.get_active_state()
+        self.performance_monitor.step_reset(active_state)
 
         self.performance_monitor.last_observation = observation
 
@@ -465,10 +467,11 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # if the observation is stable then we already trained on it, so we should add
         # relevance now.
         if observation.is_stable:
-            self.get_active_state().add_active_state_relevance(active_state_relevance)
+            active_state.add_active_state_relevance(active_state_relevance)
         self.performance_monitor.in_drift = in_drift
         self.performance_monitor.in_warning = in_warning
-        self.performance_monitor.active_state_relevance = active_state_relevance
+        self.performance_monitor.active_state_last_relevance = active_state_relevance
+        self.performance_monitor.state_relevances[active_state.state_id] = active_state.get_in_concept_relevance()
 
         # Check if we need to perform reidentification
         # either from a scheduled check for from a drift detection.
@@ -547,7 +550,9 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         active_state = self.get_active_state()
         active_representation = self.active_window_state_representations[active_state.state_id]
-        return self.perform_drift_detection(active_state, active_representation, self.drift_detector)
+        in_drift, in_warning, active_state_relevance = self.perform_drift_detection(active_state, active_representation, self.drift_detector)
+        active_state.add_active_state_relevance(active_state_relevance)
+        return in_drift, in_warning, active_state_relevance
 
     def perform_drift_detection(
         self,

@@ -28,6 +28,7 @@ class State:  # pylint: disable=too-few-public-methods
         train_representation: bool = True,
     ) -> None:
         self.state_id = state_id
+        self.name = str(self.state_id)
         self.classifier = classifier
         self.representation_constructor = representation_constructor
         # Mapping between concept ids and representations using  self.classifier.
@@ -46,7 +47,13 @@ class State:  # pylint: disable=too-few-public-methods
         # We can use ADWIN for this, to keep the most recent window of
         # accuracy measurements with the same mean.
         self.in_concept_accuracy_record = ADWIN()
+
+        # We track the states relevance while active in the same way, and also record a distribution.
+        self.in_concept_relevance_record = ADWIN()
         self.in_concept_relevance_distribution: BaseDistribution = GaussianDistribution()
+
+        # We finally track a recent relevance.
+        self.current_relevance_record = ADWIN()
 
     def learn_one(self, supervised_observation: Observation, force_train_classifier: bool = False) -> State:
         """Train the classifier and concept representation.
@@ -151,6 +158,14 @@ class State:  # pylint: disable=too-few-public-methods
         """Update statistics tracking active_state_relevance.
         Should only be called when an observation is deemed stable."""
         self.in_concept_relevance_distribution.learn_one(active_state_relevance)
+        self.in_concept_relevance_record.update(active_state_relevance)
+        self.current_relevance_record.update(active_state_relevance)
+    
+    def get_in_concept_relevance(self) -> float:
+        return self.in_concept_relevance_record.estimation
+
+    def get_current_relevance(self) -> float:
+        return self.current_relevance_record.estimation
 
     def get_self_representation(self) -> ConceptRepresentation:
         """Get the concept representation using this states classifier,

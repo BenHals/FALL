@@ -175,10 +175,11 @@ class Monitor:
 
             perf_monitor: PerformanceMonitor = classifier.performance_monitor
 
-            # self.adwin_likelihood_estimate = {}
+            self.adwin_likelihood_estimate = {}
             # adwin_likelihood_estimate.update({i:s.get_estimated_likelihood() for i,s in classifier.state_repository.items()})
             self.adwin_likelihood_estimate.update(
-                {perf_monitor.initial_active_state_id: perf_monitor.active_state_relevance}
+                # {perf_monitor.initial_active_state_id: perf_monitor.active_state_relevance}
+                {name:relevance for name, relevance in perf_monitor.state_relevances.items()}
             )
             self.acc.update(p, y)
             self.acc_baseline.update(p_base, y)

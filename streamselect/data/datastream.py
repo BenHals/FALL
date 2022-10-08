@@ -137,8 +137,13 @@ class ConceptSegmentDataStream(Dataset):
     def get_initial_concept(self) -> int:
         return self.concept_segments[0].concept_idx
     
+    def get_current_concept(self) -> ConceptSegment:
+        return self.concept_segments[self.seg_idx]
+    
     def get_last_image(self) -> np.ndarray:
-        return np.zeros((200, 200))
+        current_segment = self.get_current_concept()
+        return current_segment.get_last_image()
+        
 
     def __iter__(self) -> Iterator[Tuple[int, int]]:
         rng = check_random_state(self.seed)
@@ -147,7 +152,7 @@ class ConceptSegmentDataStream(Dataset):
         while True:
             # If we are within the window_size of the previous drift, we have a chance of drawing from the
             # previous concept.
-            current_seg = self.concept_segments[self.seg_idx]
+            current_seg = self.get_current_concept()
             observation_seg_idx = self.seg_idx
             if self.in_prev_window:
                 width = self.drifts[self.seg_idx - 1]
