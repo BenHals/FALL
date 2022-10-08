@@ -18,6 +18,7 @@ from river.base import Classifier
 
 from streamselect.adaptive_learning.base import PerformanceMonitor, BaseAdaptiveLearner
 from streamselect.data.datastream import ConceptSegmentDataStream
+from streamselect.evaluation.utils import get_index_colors
 
 Vector = List[float]
 
@@ -104,7 +105,7 @@ class Monitor:
         self.history_len = 500
         self.count = 0
         self.ex = -1
-        self.concept_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+        self.concept_colors = get_index_colors
         self.merges: dict[int, int] = {}
         self.deletions: list[int] = []
         self.acc = Accuracy()
