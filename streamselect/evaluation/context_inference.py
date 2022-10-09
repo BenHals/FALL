@@ -92,7 +92,7 @@ def _draw_active_state_history(
 ) -> None:
     index_colors = get_index_colors()
     gt_context_segments = [[[segment.segment_start, y], [segment.segment_end, y]] for segment in active_state_history]
-    gt_context_colors = [index_colors[segment.concept_idx] for segment in active_state_history]
+    gt_context_colors = [index_colors[segment.concept_idx % len(index_colors)] for segment in active_state_history]
     gt_context_lines = LineCollection(segments=gt_context_segments, colors=gt_context_colors)
     ax.add_collection(gt_context_lines)
 
@@ -101,7 +101,7 @@ def _draw_active_state_history(
     alpha_val = 0.8
     for segment in active_state_history:
         segment_midpoint = (segment.segment_start + segment.segment_end) / 2
-        segment_color = index_colors[segment.concept_idx]
+        segment_color = index_colors[segment.concept_idx % len(index_colors)]
         ax.annotate(
             str(segment.concept_idx),
             xy=(segment_midpoint, annotation_y),
