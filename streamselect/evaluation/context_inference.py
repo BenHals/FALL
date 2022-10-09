@@ -383,7 +383,6 @@ def calculate_context_to_state_max_f1(
             f1 = 0.0
             if recall + precision > 0:
                 f1 = 2 * (precision * recall) / (precision + recall)
-            print(precision, recall, f1)
             state_f1_scores.append((f1, state_idx))
 
         max_f1, _ = max(state_f1_scores)
@@ -394,7 +393,6 @@ def calculate_context_to_state_max_f1(
 
 def calculate_cf1_score(concept_segments: list[ConceptSegment], active_state_history: list[StateSegment]) -> float:
     context_to_state_max_f1_scores = calculate_context_to_state_max_f1(concept_segments, active_state_history)
-    print(context_to_state_max_f1_scores)
     return statistics.mean(list(context_to_state_max_f1_scores.values()))
 
 
