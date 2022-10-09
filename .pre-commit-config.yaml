@@ -39,7 +39,7 @@ repos:
         language: system
         types: [python]
         args:
-          - streamselect
+          - fall
           - --max-line-length=120
           - --good-names=i,j,x,y,v,p
           - --disable=duplicate-code

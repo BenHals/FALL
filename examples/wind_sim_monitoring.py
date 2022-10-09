@@ -1,17 +1,15 @@
 from river.drift.adwin import ADWIN
 from river.tree.hoeffding_tree_classifier import HoeffdingTreeClassifier
 
-from streamselect.adaptive_learning.base import BaseBufferedAdaptiveLearner
-from streamselect.adaptive_learning.reidentification_schedulers import (
-    DriftDetectionCheck,
-)
-from streamselect.concept_representations import ErrorRateRepresentation
-from streamselect.data.datastream import ConceptSegmentDataStream, make_stream_concepts
-from streamselect.data.synthetic.wind_sim import WindSimGenerator
-from streamselect.data.transition_patterns import circular_transition_pattern
-from streamselect.data.utils import Concept
-from streamselect.evaluation.monitoring import Monitor
-from streamselect.repository import AbsoluteValueComparer
+from fall.adaptive_learning.base import BaseBufferedAdaptiveLearner
+from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
+from fall.concept_representations import ErrorRateRepresentation
+from fall.data.datastream import ConceptSegmentDataStream, make_stream_concepts
+from fall.data.synthetic.wind_sim import WindSimGenerator
+from fall.data.transition_patterns import circular_transition_pattern
+from fall.data.utils import Concept
+from fall.evaluation.monitoring import Monitor
+from fall.repository import AbsoluteValueComparer
 
 seed = 42
 s0 = WindSimGenerator(concept=3, sample_random_state_init=seed)
