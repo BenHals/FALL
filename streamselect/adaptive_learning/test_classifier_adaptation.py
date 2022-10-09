@@ -55,24 +55,24 @@ def test_max_acc_sig_relevance() -> None:
     s1 = repo.add_next_state()
     s2 = repo.add_next_state()
     rng = np.random.default_rng(42)
-    s1_relevance = rng.normal(0.95, 0.025, 1000)
+    s1_relevance = rng.normal(0.95, 0.05, 1000)
     for rel in s1_relevance:
         s1.add_active_state_relevance(rel)
-    s1_accuracy = rng.normal(0.95, 0.025, 1000)
+    s1_accuracy = rng.normal(0.95, 0.05, 1000)
     for acc in s1_accuracy:
         s1.in_concept_accuracy_record.update(acc)
 
-    s2_relevance = rng.normal(0.925, 0.025, 1000)
+    s2_relevance = rng.normal(0.925, 0.05, 1000)
     for rel in s2_relevance:
         s2.add_active_state_relevance(rel)
-    s2_accuracy = rng.normal(0.975, 0.025, 1000)
+    s2_accuracy = rng.normal(0.975, 0.05, 1000)
     for acc in s2_accuracy:
         s2.in_concept_accuracy_record.update(acc)
 
-    bg_relevance = rng.normal(0.85, 0.025, 1000)
+    bg_relevance = rng.normal(0.85, 0.05, 1000)
     for rel in bg_relevance:
         bg.add_active_state_relevance(rel)
-    bg_accuracy = rng.normal(0.99, 0.025, 1000)
+    bg_accuracy = rng.normal(0.99, 0.05, 1000)
     for acc in bg_accuracy:
         bg.in_concept_accuracy_record.update(acc)
 
