@@ -19,18 +19,19 @@ from streamselect.adaptive_learning.reidentification_schedulers import (
     ReidentificationSchedule,
 )
 from streamselect.concept_representations import ConceptRepresentation
+from streamselect.data.utils import StateSegment
 from streamselect.repository import Repository, RepresentationComparer, ValuationPolicy
 from streamselect.states import State
 from streamselect.utils import Observation, get_drift_detector_estimate
 
 
 class PerformanceMonitor:
-    def __init__(self) -> None:
-        self.initial_active_state_id: int = -1
+    def __init__(self, initial_active_state_id: int) -> None:
+        self.initial_active_state_id: int = initial_active_state_id
         self.in_drift: bool = False
         self.in_warning: bool = False
         self.made_transition: bool = False
-        self.final_active_state_id: int = -1
+        self.final_active_state_id: int = initial_active_state_id
         self.active_state_last_relevance: float = -1
         self.background_in_drift: bool = False
         self.background_in_warning: bool = False
@@ -41,9 +42,13 @@ class PerformanceMonitor:
         self.deletions: list[int] = []
         self.merges: dict[int, int] = {}
         self.repository: dict[int, State] = {}
-        self.concept_occurences: dict[str, int] = {}
+        self.concept_occurences: dict[str, int] = {str(initial_active_state_id): 1}
         self.transition_matrix: dict[str, dict[str, int]] = {}
         self.state_relevances: dict[int, float] = {}
+        self.observation_count = 0
+
+        self.current_active_state_segment = StateSegment(0, -1, 1, initial_active_state_id)
+        self.active_state_history: list[StateSegment] = [self.current_active_state_segment]
 
     def step_reset(self, initial_active_state: State) -> None:
         """Reset monitoring on taking a new step."""
@@ -72,6 +77,10 @@ class PerformanceMonitor:
         if self.initial_active_state_id not in self.repository:
             self.repository[self.initial_active_state_id] = initial_active_state
 
+        self.observation_count += 1
+        assert self.current_active_state_segment.concept_idx == initial_active_state.state_id
+        self.current_active_state_segment.segment_end = self.observation_count
+
     def set_final_active_state(self, final_active_state: State) -> None:
         self.final_active_state_id = final_active_state.state_id
         if self.final_active_state_id not in self.repository:
@@ -96,6 +105,10 @@ class PerformanceMonitor:
             self.transition_matrix[str(final_state)]["total"] = 0
 
         add_to_transition_matrix(initial_state, final_state, self.transition_matrix)
+
+        self.concept_occurences[str(final_state)] = self.concept_occurences.get(str(final_state), 0) + 1
+
+        self.record_new_segment(final_state)
 
     def delete_merge_state(self, merge_from: str, merge_into: str) -> None:
         # Handle merging transition states, which are
@@ -167,6 +180,15 @@ class PerformanceMonitor:
         self.delete_merge_state(f"T-{delete_id}", init_state)
 
         return init_state
+
+    def record_new_segment(self, new_segment_active_state_id: int) -> None:
+        self.current_active_state_segment = StateSegment(
+            self.observation_count, self.observation_count, 0, new_segment_active_state_id
+        )
+        # Subtract 1 from the previous segment, to make the segment_end value inclusive
+        if len(self.active_state_history) > 0:
+            self.active_state_history[-1].segment_end -= 1
+        self.active_state_history.append(self.current_active_state_segment)
 
 
 class BaseAdaptiveLearner(Classifier, abc.ABC):
@@ -333,7 +355,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             self.reidentification_schedule.add_scheduler(scheduler)
         self.reidentification_schedule.initialize(0)
 
-        self.performance_monitor = PerformanceMonitor()
+        self.performance_monitor = PerformanceMonitor(self.active_state_id)
 
     def setup_background_state(self) -> None:
         """Setup or reset the background state."""
@@ -576,7 +598,6 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         in_warning = False
         # turn off detections which do not match mode
         if in_drift:
-            print(state_relevance, get_drift_detector_estimate(drift_detector))
             if self.drift_detection_mode == "lower":
                 if state_relevance >= get_drift_detector_estimate(drift_detector):
                     in_drift = False

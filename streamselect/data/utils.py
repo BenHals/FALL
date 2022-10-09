@@ -37,7 +37,20 @@ class Concept:
         return str(self)
 
 
-class ConceptSegment:
+class DataStreamSegment:
+    def __init__(self, segment_start: int, segment_end: int, concept_idx: int):
+        self.segment_start = segment_start
+        self.segment_end = segment_end
+        self.concept_idx = concept_idx
+
+    def __str__(self) -> str:
+        return f"{self.concept_idx}:{self.segment_start}->{self.segment_end}"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class ConceptSegment(DataStreamSegment):
     def __init__(
         self,
         concept_stream: Concept,
@@ -48,10 +61,8 @@ class ConceptSegment:
     ):
         """A container class representing a concept segment."""
         self.concept = concept_stream
-        self.segment_start = segment_start
-        self.segment_end = segment_end
         self.recurrence_count = recurrence_count
-        self.concept_idx = concept_idx
+        super().__init__(segment_start, segment_end, concept_idx)
 
     def get_last_image(self) -> np.ndarray:
         return self.concept.get_last_image()
@@ -59,5 +70,18 @@ class ConceptSegment:
     def __str__(self) -> str:
         return f"{self.concept}r{self.recurrence_count}:{self.segment_start}->{self.segment_end}"
 
-    def __repr__(self) -> str:
-        return str(self)
+
+class StateSegment(DataStreamSegment):
+    def __init__(
+        self,
+        segment_start: int,
+        segment_end: int,
+        recurrence_count: int,
+        concept_idx: int = 0,
+    ):
+        """A container class representing an active state segment."""
+        self.recurrence_count = recurrence_count
+        super().__init__(segment_start, segment_end, concept_idx)
+
+    def __str__(self) -> str:
+        return f"{self.concept_idx}r{self.recurrence_count}:{self.segment_start}->{self.segment_end}"
