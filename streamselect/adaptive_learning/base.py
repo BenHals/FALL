@@ -20,7 +20,12 @@ from streamselect.adaptive_learning.reidentification_schedulers import (
 )
 from streamselect.concept_representations import ConceptRepresentation
 from streamselect.data.utils import StateSegment
-from streamselect.repository import Repository, RepresentationComparer, ValuationPolicy
+from streamselect.repository import (
+    Repository,
+    RepresentationComparer,
+    TransitionFSM,
+    ValuationPolicy,
+)
 from streamselect.states import State
 from streamselect.utils import Observation, get_drift_detector_estimate
 
@@ -43,7 +48,7 @@ class PerformanceMonitor:
         self.merges: dict[int, int] = {}
         self.repository: dict[int, State] = {}
         self.concept_occurences: dict[str, int] = {str(initial_active_state_id): 1}
-        self.transition_matrix: dict[str, dict[str, int]] = {}
+        self.transition_matrix = TransitionFSM()
         self.state_relevances: dict[int, float] = {}
         self.observation_count = 0
 
@@ -97,89 +102,11 @@ class PerformanceMonitor:
             else:
                 raise ValueError("Recording transition from deleted state")
 
-        if str(initial_state) not in self.transition_matrix:
-            self.transition_matrix[str(initial_state)] = {}
-            self.transition_matrix[str(initial_state)]["total"] = 0
-        if str(final_state) not in self.transition_matrix:
-            self.transition_matrix[str(final_state)] = {}
-            self.transition_matrix[str(final_state)]["total"] = 0
-
-        add_to_transition_matrix(initial_state, final_state, self.transition_matrix)
+        self.transition_matrix.add_transition(initial_state, final_state)
 
         self.concept_occurences[str(final_state)] = self.concept_occurences.get(str(final_state), 0) + 1
 
         self.record_new_segment(final_state)
-
-    def delete_merge_state(self, merge_from: str, merge_into: str) -> None:
-        # Handle merging transition states, which are
-        # not in the repository
-        if "T" not in str(merge_from):
-            self.repository.pop(int(merge_from), 0)
-            self.deletions.append(int(merge_from))
-
-        # Need to merge from transition matrix
-        # First merge transitions from merge_from into those from
-        transitions_from = self.transition_matrix.pop(str(merge_from), {})
-        new_transitions = self.transition_matrix.setdefault(str(merge_into), {"total": 0})
-        for to_id in transitions_from:
-            if to_id == "total":
-                continue
-            n_trans_merge = transitions_from[to_id]
-            n_trans_into = new_transitions.setdefault(to_id, 0)
-            new_transitions[to_id] = n_trans_merge + n_trans_into
-            new_transitions["total"] += n_trans_merge
-
-        # Then merge transitions into this state
-        # We delete the entry and add to entry for merge_into
-        for from_state in list(self.transition_matrix.keys()):
-            n_trans_merge = self.transition_matrix[from_state].pop(str(merge_from), 0)
-            n_trans_to = self.transition_matrix[from_state].setdefault(str(merge_into), 0)
-            self.transition_matrix[from_state][str(merge_into)] = n_trans_merge + n_trans_to
-
-        merge_from_occurences = self.concept_occurences.pop(merge_from, 0)
-        self.concept_occurences[merge_into] = self.concept_occurences.get(merge_into, 0) + merge_from_occurences
-
-    def get_prev_state_from_transitions(self, state_id: int) -> tuple[int, str, str]:
-        possible_previous_states: list[tuple[int, str]] = [(0, "T")]
-        for prev_id in self.repository:
-            if prev_id == state_id or prev_id not in self.transition_matrix:
-                continue
-            if state_id in self.transition_matrix[str(prev_id)]:
-                n_trans = self.transition_matrix[str(prev_id)][str(state_id)]
-                possible_previous_states.append((n_trans, str(prev_id)))
-        prev_state_count, prev_state = max(possible_previous_states, key=lambda x: x[0])
-        prev_state_transition = f"T-{prev_state}"
-        return (prev_state_count, prev_state, prev_state_transition)
-
-    def delete_into_transition_state(self, delete_id: int) -> str:
-        """Merge a state into a generic transition state following the previous state.
-        In many cases, i.e., gradual drift between state 0 -> state 1, there will be some
-        transition state between them which has no meaning. We don't want to store all of these
-        states, as they have no individual meaning, but we want to store the idea that there is
-        some generic transition following state 0 and going to state 1. S0 -> T0 -> S1.
-
-        So if we see S0->S2->S1 and decide S2 was only a transition, we delete it and merge its
-        transitions into T-0.
-
-        Returns what the delete_id turned into so we can update transitions.
-        (e.g., returns T-0 rather than 2)
-        """
-
-        # First we need to work out what the previous state was, as we don't store this
-        # (maybe we should).
-        # We can find this as an entry in the transition matrix.
-        # Should only be one, but we handle if there are multiple. We take the max num transitions
-        # to be the previous state
-        _, _, prev_state_transition = self.get_prev_state_from_transitions(delete_id)
-
-        init_state = prev_state_transition
-        self.delete_merge_state(str(delete_id), init_state)
-
-        # We create a transition state for all states, so need to also
-        # merge the one for the delete state.
-        self.delete_merge_state(f"T-{delete_id}", init_state)
-
-        return init_state
 
     def record_new_segment(self, new_segment_active_state_id: int) -> None:
         self.current_active_state_segment = StateSegment(
@@ -681,12 +608,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # if the current active state is most relevant, as the drift detection indicates it
         # is no longer relevant.
         new_state_triggers: List[int] = [-1]
-        if drift.drift_type == DriftType.DriftDetectorTriggered:
-            new_state_triggers.append(self.active_state_id)
+        # if drift.drift_type == DriftType.DriftDetectorTriggered:
+        #     new_state_triggers.append(self.active_state_id)
 
         # if the selected state was in the new_state_triggers, we instead select
         # a newly constructed state.
-        if adapted_state.state_id in new_state_triggers:
+        if adapted_state is None or adapted_state.state_id in new_state_triggers:
             adapted_state = self.repository.make_next_state()
 
         if adapted_state.state_id not in self.repository.states:
@@ -776,6 +703,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         buffer_timeout_scheduler: Callable[
             [float, State, Optional[Observation]], float
         ] = get_increasing_buffer_scheduler(1.0),
+        reidentification_check_schedulers: Optional[List[BaseReidentificationScheduler]] = None,
     ) -> None:
         """
         Parameters
@@ -844,6 +772,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             prediction_mode,
             background_state_mode,
             drift_detection_mode,
+            reidentification_check_schedulers,
         )
         self.buffer_timeout_max = buffer_timeout_max
         self.buffer_timeout_scheduler = buffer_timeout_scheduler

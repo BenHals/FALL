@@ -19,6 +19,7 @@ from river.utils import Rolling
 from streamselect.adaptive_learning.base import BaseAdaptiveLearner, PerformanceMonitor
 from streamselect.data.datastream import ConceptSegmentDataStream
 from streamselect.evaluation.utils import get_index_colors
+from streamselect.repository import TransitionFSM
 
 Vector = List[float]
 
@@ -74,31 +75,23 @@ def segment_history(history: np.ndarray, ex: int) -> np.ndarray:
 def plot_tm(
     ax: plt.axis,
     active_state_id: int,
-    T: dict[str, dict[str, int]],
+    T: TransitionFSM,
     repository: dict[int, Any],
     concept_colors: list[str],
     c_init: int,
 ) -> None:
     G = nx.DiGraph()
+    node_colors = []
+    node_edges = []
     for ID in repository:
         G.add_node(str(ID))
         G.add_edge(str(ID), str(ID))
-        G.add_node(f"T-{ID}")
-        G.add_edge(f"T-{ID}", f"T-{ID}")
-    for from_id, from_T in T.items():
+        node_colors.append(concept_colors[(ID) % len(concept_colors)])
+        node_edges.append(concept_colors[(ID) % len(concept_colors)] if ID != active_state_id else "black")
+    for from_id, from_T in T.adjacency_list.items():
         for to_id, n_T in [(i, t) for i, t in from_T.items() if i != "total"]:
-            if to_id != from_id and n_T > 0:
-                G.add_edge(str(from_id), str(to_id), weight=n_T, label=n_T)
-
-    node_colors = []
-    node_edges = []
-    for n in G.nodes:
-        try:
-            ID = int(float(str(n).rsplit("-", maxsplit=1)[-1]))
-        except ValueError:
-            ID = 5
-        node_colors.append(concept_colors[(ID + c_init) % len(concept_colors)])
-        node_edges.append(concept_colors[(ID + c_init) % len(concept_colors)] if ID != active_state_id else "black")
+            if to_id != from_id and n_T.total_weight > 0:
+                G.add_edge(str(from_id), str(to_id), weight=n_T.total_weight, label=n_T.total_weight)
 
     emit_edge_labels = {(n1, n2): f"{d['label']:.0f}" for n1, n2, d in G.edges(data=True) if n1 != n2}
     pos = nx.circular_layout(G)
@@ -307,7 +300,7 @@ class Monitor:
             self.ax8.clear()
             plot_tm(
                 self.ax8,
-                perf_monitor.initial_active_state_id,
+                classifier.active_state_id,
                 perf_monitor.transition_matrix,
                 perf_monitor.repository,
                 self.concept_colors,

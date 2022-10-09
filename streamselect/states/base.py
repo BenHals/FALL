@@ -175,3 +175,9 @@ class State:  # pylint: disable=too-few-public-methods
         """Deactivate training representation.
         Some representations are not trained, e.g., implied error rate."""
         self.train_representation = False
+
+    def __str__(self) -> str:
+        return f"<State {self.state_id}>"
+
+    def __repr__(self) -> str:
+        return str(self)
