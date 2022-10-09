@@ -1,4 +1,4 @@
-from river import synth
+from river.datasets import synth
 from river.tree import HoeffdingTreeClassifier
 
 from streamselect.concept_representations import ErrorRateRepresentation

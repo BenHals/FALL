@@ -2,7 +2,7 @@
 
 import abc
 from collections import deque
-from typing import Deque, List
+from typing import Deque, List, Tuple
 
 from river.base import Base
 
@@ -45,9 +45,9 @@ class ConceptRepresentation(Base, abc.ABC):
         self.update_period: int = update_period
         self.updates_per_window = window_size // update_period
 
-        self.supervised_window: Deque[Observation] = deque(maxlen=self.window_size)
+        self.supervised_window: Deque[Tuple[Observation, bool]] = deque(maxlen=self.window_size)
         self.new_supervised: Deque[Observation] = deque()
-        self.unsupervised_window: Deque[Observation] = deque(maxlen=self.window_size)
+        self.unsupervised_window: Deque[Tuple[Observation, bool]] = deque(maxlen=self.window_size)
         self.new_unsupervised: Deque[Observation] = deque()
         # Assumes the first observation will be at timestep 0.0
         self.supervised_timestep = -1.0

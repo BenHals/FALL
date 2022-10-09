@@ -3,11 +3,16 @@ from __future__ import annotations
 
 from typing import Callable
 
-from river import utils
 from river.base import Classifier
 from river.base.typing import ClfTarget
+from river.compose import pure_inference_mode
+from river.drift import ADWIN
 
-from streamselect.concept_representations import ConceptRepresentation
+from streamselect.concept_representations import (
+    BaseDistribution,
+    ConceptRepresentation,
+    GaussianDistribution,
+)
 from streamselect.utils import Observation
 
 
@@ -22,6 +27,7 @@ class State:  # pylint: disable=too-few-public-methods
         train_representation: bool = True,
     ) -> None:
         self.state_id = state_id
+        self.name = str(self.state_id)
         self.classifier = classifier
         self.representation_constructor = representation_constructor
         # Mapping between concept ids and representations using  self.classifier.
@@ -34,6 +40,19 @@ class State:  # pylint: disable=too-few-public-methods
         self.active_seen_weight = 0.0
         self.weight_since_last_active = 0.0
         self.last_trained_active_timestep = -1.0
+
+        # We store a record of this states accuracy while active
+        # (i.e., on observations with an active_state_id set to this states id)
+        # We can use ADWIN for this, to keep the most recent window of
+        # accuracy measurements with the same mean.
+        self.in_concept_accuracy_record = ADWIN()
+
+        # We track the states relevance while active in the same way, and also record a distribution.
+        self.in_concept_relevance_record = ADWIN()
+        self.in_concept_relevance_distribution: BaseDistribution = GaussianDistribution()
+
+        # We finally track a recent relevance.
+        self.current_relevance_record = ADWIN()
 
     def learn_one(self, supervised_observation: Observation, force_train_classifier: bool = False) -> State:
         """Train the classifier and concept representation.
@@ -63,7 +82,7 @@ class State:  # pylint: disable=too-few-public-methods
             )
             # Make a prediction without training statistics,
             # to avoid training twice.
-            with utils.pure_inference_mode():
+            with pure_inference_mode():
                 p = self.classifier.predict_one(supervised_observation.x)
                 supervised_observation.add_prediction(p, self.state_id)
             representation.learn_one(supervised_observation)
@@ -86,6 +105,12 @@ class State:  # pylint: disable=too-few-public-methods
             )
         except TypeError:
             self.classifier.learn_one(x=supervised_observation.x, y=supervised_observation.y)
+
+        is_correct = supervised_observation.y == supervised_observation.predictions[self.state_id]
+        self.in_concept_accuracy_record.update(int(is_correct))  # type: ignore
+
+        if supervised_observation.active_state_relevance is not None:
+            self.add_active_state_relevance(supervised_observation.active_state_relevance)
 
         self.last_trained_active_timestep = supervised_observation.seen_at
         return self
@@ -128,6 +153,19 @@ class State:  # pylint: disable=too-few-public-methods
             self.active_seen_weight += sample_weight
             self.weight_since_last_active = 0
 
+    def add_active_state_relevance(self, active_state_relevance: float) -> None:
+        """Update statistics tracking active_state_relevance.
+        Should only be called when an observation is deemed stable."""
+        self.in_concept_relevance_distribution.learn_one(active_state_relevance)
+        self.in_concept_relevance_record.update(active_state_relevance)
+        self.current_relevance_record.update(active_state_relevance)
+
+    def get_in_concept_relevance(self) -> float:
+        return self.in_concept_relevance_record.estimation
+
+    def get_current_relevance(self) -> float:
+        return self.current_relevance_record.estimation
+
     def get_self_representation(self) -> ConceptRepresentation:
         """Get the concept representation using this states classifier,
         on data drawn from this concept."""
@@ -137,3 +175,9 @@ class State:  # pylint: disable=too-few-public-methods
         """Deactivate training representation.
         Some representations are not trained, e.g., implied error rate."""
         self.train_representation = False
+
+    def __str__(self) -> str:
+        return f"<State {self.state_id}>"
+
+    def __repr__(self) -> str:
+        return str(self)

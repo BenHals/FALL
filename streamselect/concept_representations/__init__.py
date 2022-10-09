@@ -8,6 +8,7 @@ online."""
 from .base import ConceptRepresentation
 from .error_rate_representation import ErrorRateRepresentation
 from .meta_feature_distributions import (
+    BaseDistribution,
     DistributionTypes,
     GaussianDistribution,
     SingleValueDistribution,
@@ -17,6 +18,7 @@ __all__ = [
     "ConceptRepresentation",
     "ErrorRateRepresentation",
     "DistributionTypes",
+    "BaseDistribution",
     "SingleValueDistribution",
     "GaussianDistribution",
 ]

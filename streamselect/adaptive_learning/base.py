@@ -5,9 +5,13 @@ from typing import Callable, Deque, Dict, List, Optional, Set, Tuple, Union
 
 from river.base import Classifier, DriftDetector
 from river.base.typing import ClfTarget
-from river.utils import pure_inference_mode
+from river.compose import pure_inference_mode
 
 from streamselect.adaptive_learning.buffer import SupervisedUnsupervisedBuffer
+from streamselect.adaptive_learning.classifier_adaptation import (
+    max_acc_sig_relevance_adaptation,
+    maximum_relevance_adaptation,
+)
 from streamselect.adaptive_learning.reidentification_schedulers import (
     BaseReidentificationScheduler,
     DriftInfo,
@@ -15,33 +19,50 @@ from streamselect.adaptive_learning.reidentification_schedulers import (
     ReidentificationSchedule,
 )
 from streamselect.concept_representations import ConceptRepresentation
-from streamselect.repository import Repository, RepresentationComparer, ValuationPolicy
+from streamselect.data.utils import StateSegment
+from streamselect.repository import (
+    Repository,
+    RepresentationComparer,
+    TransitionFSM,
+    ValuationPolicy,
+)
 from streamselect.states import State
 from streamselect.utils import Observation, get_drift_detector_estimate
 
 
 class PerformanceMonitor:
-    def __init__(self) -> None:
-        self.initial_active_state_id: int = -1
+    def __init__(self, initial_active_state_id: int) -> None:
+        self.initial_active_state_id: int = initial_active_state_id
         self.in_drift: bool = False
         self.in_warning: bool = False
         self.made_transition: bool = False
-        self.final_active_state_id: int = -1
-        self.active_state_relevance: float = -1
+        self.final_active_state_id: int = initial_active_state_id
+        self.active_state_last_relevance: float = -1
         self.background_in_drift: bool = False
         self.background_in_warning: bool = False
         self.background_state_relevance: float = -1
         self.last_observation: Optional[Observation] = None
+        self.last_trained_observation: Optional[Observation] = None
         self.last_drift: Optional[DriftInfo] = None
+        self.deletions: list[int] = []
+        self.merges: dict[int, int] = {}
+        self.repository: dict[int, State] = {}
+        self.concept_occurences: dict[str, int] = {str(initial_active_state_id): 1}
+        self.transition_matrix = TransitionFSM()
+        self.state_relevances: dict[int, float] = {}
+        self.observation_count = 0
 
-    def step_reset(self, initial_active_state_id: int) -> None:
+        self.current_active_state_segment = StateSegment(0, -1, 1, initial_active_state_id)
+        self.active_state_history: list[StateSegment] = [self.current_active_state_segment]
+
+    def step_reset(self, initial_active_state: State) -> None:
         """Reset monitoring on taking a new step."""
-        self.initial_active_state_id = initial_active_state_id
+        self.set_initial_active_state(initial_active_state)
         self.in_drift = False
         self.in_warning = False
         self.made_transition = False
         self.final_active_state_id = -1
-        self.active_state_relevance = -1
+        self.active_state_last_relevance = -1
         self.background_in_drift = False
         self.background_in_warning = False
         self.background_state_relevance = -1
@@ -55,6 +76,46 @@ class PerformanceMonitor:
         self.made_transition = False
         self.background_in_drift = False
         self.background_in_warning = False
+
+    def set_initial_active_state(self, initial_active_state: State) -> None:
+        self.initial_active_state_id = initial_active_state.state_id
+        if self.initial_active_state_id not in self.repository:
+            self.repository[self.initial_active_state_id] = initial_active_state
+
+        self.observation_count += 1
+        assert self.current_active_state_segment.concept_idx == initial_active_state.state_id
+        self.current_active_state_segment.segment_end = self.observation_count
+
+    def set_final_active_state(self, final_active_state: State) -> None:
+        self.final_active_state_id = final_active_state.state_id
+        if self.final_active_state_id not in self.repository:
+            self.repository[self.final_active_state_id] = final_active_state
+
+    def record_transition(self, initial_state: int, final_state: int) -> None:
+        """Record an observation to observation level transition from the initial_state to the current state.
+        Depends on if a drift was detected, or if in warning which records are updated.
+        """
+        if initial_state in self.deletions or initial_state is None:
+            if initial_state in self.merges:
+                while initial_state in self.merges:
+                    initial_state = self.merges[initial_state]
+            else:
+                raise ValueError("Recording transition from deleted state")
+
+        self.transition_matrix.add_transition(initial_state, final_state)
+
+        self.concept_occurences[str(final_state)] = self.concept_occurences.get(str(final_state), 0) + 1
+
+        self.record_new_segment(final_state)
+
+    def record_new_segment(self, new_segment_active_state_id: int) -> None:
+        self.current_active_state_segment = StateSegment(
+            self.observation_count, self.observation_count, 0, new_segment_active_state_id
+        )
+        # Subtract 1 from the previous segment, to make the segment_end value inclusive
+        if len(self.active_state_history) > 0:
+            self.active_state_history[-1].segment_end -= 1
+        self.active_state_history.append(self.current_active_state_segment)
 
 
 class BaseAdaptiveLearner(Classifier, abc.ABC):
@@ -74,7 +135,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
-        drift_detection_mode: str = "any",
+        drift_detection_mode: str = "lower",
         reidentification_check_schedulers: Optional[List[BaseReidentificationScheduler]] = None,
     ) -> None:
         """
@@ -173,6 +234,17 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.reidentification_check_schedulers = (
             reidentification_check_schedulers if reidentification_check_schedulers is not None else []
         )
+        self.classifier_adaptation_mode = "MASR"
+
+        classifier_adaptation_mode_map = {"MASR": max_acc_sig_relevance_adaptation, "MR": maximum_relevance_adaptation}
+
+        # self.perform_classifier_adaptation = maximum_relevance_adaptation
+        try:
+            self.perform_classifier_adaptation = classifier_adaptation_mode_map[
+                self.classifier_adaptation_mode.upper()
+            ]
+        except KeyError as e:
+            raise ValueError(f"Classifier adaptation mode {self.classifier_adaptation_mode} not recognized. ") from e
 
         # Validation
         if self.prediction_mode != "all" and self.construct_pair_representations:
@@ -210,7 +282,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             self.reidentification_schedule.add_scheduler(scheduler)
         self.reidentification_schedule.initialize(0)
 
-        self.performance_monitor = PerformanceMonitor()
+        self.performance_monitor = PerformanceMonitor(self.active_state_id)
 
     def setup_background_state(self) -> None:
         """Setup or reset the background state."""
@@ -240,6 +312,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         state_predictions = self.repository.get_repository_predictions(unsupervised_observation, self.prediction_mode)
         p = self.combine_predictions(state_predictions)
 
+        unsupervised_observation.is_stable = True
         for state_id, state_p in state_predictions.items():
             unsupervised_observation.add_prediction(state_p, state_id)
 
@@ -288,9 +361,11 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.train_background_supervised(supervised_observation)
 
         # train supervised representation features and state classifier.
+        supervised_observation.is_stable = True
         trainable_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
         for state in trainable_states:
             state.learn_one(supervised_observation)
+        self.performance_monitor.last_trained_observation = supervised_observation
 
         self.step(supervised_observation)
 
@@ -321,7 +396,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
     def step(self, observation: Observation) -> None:
         """Update internal state"""
-        self.performance_monitor.step_reset(self.active_state_id)
+        active_state = self.get_active_state()
+        self.performance_monitor.step_reset(active_state)
 
         self.performance_monitor.last_observation = observation
 
@@ -329,9 +405,15 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.repository.step_all(self.active_state_id)
 
         in_drift, in_warning, active_state_relevance = self.active_state_drift_detection()
+        observation.add_active_state_relevance(active_state_relevance, self.active_state_id)
+        # if the observation is stable then we already trained on it, so we should add
+        # relevance now.
+        if observation.is_stable:
+            active_state.add_active_state_relevance(active_state_relevance)
         self.performance_monitor.in_drift = in_drift
         self.performance_monitor.in_warning = in_warning
-        self.performance_monitor.active_state_relevance = active_state_relevance
+        self.performance_monitor.active_state_last_relevance = active_state_relevance
+        self.performance_monitor.state_relevances[active_state.state_id] = active_state.get_in_concept_relevance()
 
         # Check if we need to perform reidentification
         # either from a scheduled check for from a drift detection.
@@ -365,7 +447,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
                 self.performance_monitor.made_transition = True
 
         self.evaluate_background_state(transitioned=self.performance_monitor.made_transition)
-        self.performance_monitor.final_active_state_id = self.active_state_id
+        self.performance_monitor.set_final_active_state(self.get_active_state())
 
     def evaluate_background_state(self, transitioned: bool) -> None:
         """Step the background state, and reset if needed."""
@@ -410,7 +492,11 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         active_state = self.get_active_state()
         active_representation = self.active_window_state_representations[active_state.state_id]
-        return self.perform_drift_detection(active_state, active_representation, self.drift_detector)
+        in_drift, in_warning, active_state_relevance = self.perform_drift_detection(
+            active_state, active_representation, self.drift_detector
+        )
+        active_state.add_active_state_relevance(active_state_relevance)
+        return in_drift, in_warning, active_state_relevance
 
     def perform_drift_detection(
         self,
@@ -434,17 +520,19 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         state_relevance = self.representation_comparer.get_state_rep_similarity(state, state_representation)
 
-        in_drift, in_warning = drift_detector.update(state_relevance)  # type: ignore
-
+        _ = drift_detector.update(state_relevance)  # type: ignore
+        in_drift = drift_detector.drift_detected
+        in_warning = False
         # turn off detections which do not match mode
-        if self.drift_detection_mode == "lower":
-            if state_relevance >= get_drift_detector_estimate(drift_detector):
-                in_drift = False
-                in_warning = False
-        if self.drift_detection_mode == "higher":
-            if state_relevance <= get_drift_detector_estimate(drift_detector):
-                in_drift = False
-                in_warning = False
+        if in_drift:
+            if self.drift_detection_mode == "lower":
+                if state_relevance >= get_drift_detector_estimate(drift_detector):
+                    in_drift = False
+                    in_warning = False
+            if self.drift_detection_mode == "higher":
+                if state_relevance <= get_drift_detector_estimate(drift_detector):
+                    in_drift = False
+                    in_warning = False
 
         return in_drift, in_warning, state_relevance
 
@@ -506,7 +594,13 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def get_adapted_state(self, state_relevance: Dict[int, float], drift: DriftInfo) -> State:
         """Returns a new state adapted to current conditions, based on estimated relevance
         of previous states. Adds the state to the repository."""
-        max_state_id, _ = max(state_relevance.items(), key=lambda x: x[1])
+
+        # Get the adapted state based on state_relevance.
+        # May be a state from the repository, the background state, the active state
+        # or a newly created state.
+        adapted_state = self.perform_classifier_adaptation(
+            self.background_state, self.repository, state_relevance, drift
+        )
 
         # Setup IDs which trigger a new state to be created.
         # If we are just checking reidentification, this is only the background state.
@@ -514,17 +608,21 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # if the current active state is most relevant, as the drift detection indicates it
         # is no longer relevant.
         new_state_triggers: List[int] = [-1]
-        if drift.drift_type == DriftType.DriftDetectorTriggered:
-            new_state_triggers.append(self.active_state_id)
+        # if drift.drift_type == DriftType.DriftDetectorTriggered:
+        #     new_state_triggers.append(self.active_state_id)
 
-        if max_state_id in new_state_triggers:
-            # We skip memory management so that we may use states while processing
+        # if the selected state was in the new_state_triggers, we instead select
+        # a newly constructed state.
+        if adapted_state is None or adapted_state.state_id in new_state_triggers:
+            adapted_state = self.repository.make_next_state()
+
+        if adapted_state.state_id not in self.repository.states:
+            # We skip memory management for now so that we may use states while processing
             # the transition. We manually call apply_memory_management at the end of
             # the transition to handle this after the transition.
-            new_state = self.repository.add_next_state(skip_memory_management=True)
-        else:
-            new_state = self.repository.states[max_state_id]
-        return new_state
+            self.repository.add(adapted_state, skip_memory_management=True)
+
+        return adapted_state
 
     def transition_active_state(self, next_active_state: State, in_drift: bool, in_warning: bool) -> None:
         """Transition to an active state in the repository."""
@@ -533,6 +631,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.repository.add_transition(
             current_active_state, next_active_state, in_drift=in_drift, in_warning=in_warning
         )
+        self.performance_monitor.record_transition(current_active_state.state_id, next_active_state.state_id)
 
         self.transition_reset(current_active_state.state_id, next_active_state.state_id, in_drift, in_warning)
 
@@ -552,7 +651,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             else self.active_representation_constructor(s_id)
             for s_id in representation_ids
         }
-        self.drift_detector.reset()
+        self.drift_detector._reset()  # pylint: disable=W0212
         self.repository.apply_memory_management()
         self.reidentification_schedule.transition_reset(self.supervised_timestep)
 
@@ -572,13 +671,12 @@ def get_constant_max_buffer_scheduler() -> Callable[[float, State, Optional[Obse
 def get_increasing_buffer_scheduler(
     increase_rate: float = 1.0,
 ) -> Callable[[float, State, Optional[Observation]], float]:
-    """Returns a buffer timeout scheduler which always
-    sets the buffer_timeout to be max."""
+    """Returns a buffer timeout scheduler which increases the buffer time as more weight is seen."""
 
     def get_buffer_timeout(
         buffer_timeout_max: float, active_state: State, observation: Optional[Observation] = None
     ) -> float:
-        return min(round(active_state.seen_weight * increase_rate), buffer_timeout_max)
+        return min(round(active_state.active_seen_weight * increase_rate), buffer_timeout_max)
 
     return get_buffer_timeout
 
@@ -601,10 +699,11 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         construct_pair_representations: bool = False,
         prediction_mode: str = "active",
         background_state_mode: Union[str, int, None] = "drift_reset",
-        drift_detection_mode: str = "any",
+        drift_detection_mode: str = "lower",
         buffer_timeout_scheduler: Callable[
             [float, State, Optional[Observation]], float
         ] = get_increasing_buffer_scheduler(1.0),
+        reidentification_check_schedulers: Optional[List[BaseReidentificationScheduler]] = None,
     ) -> None:
         """
         Parameters
@@ -673,6 +772,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             prediction_mode,
             background_state_mode,
             drift_detection_mode,
+            reidentification_check_schedulers,
         )
         self.buffer_timeout_max = buffer_timeout_max
         self.buffer_timeout_scheduler = buffer_timeout_scheduler
@@ -709,9 +809,12 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         # Train unsupervised representation features
         # In the buffered version, we train on observations coming out
         # of the buffer, rather than new observations.
-        self.buffer.buffer_unsupervised(x, unsupervised_observation.active_state_id, unsupervised_observation.seen_at)
+        unsupervised_observation = self.buffer.buffer_unsupervised(
+            x, unsupervised_observation.active_state_id, unsupervised_observation.seen_at
+        )
         stable_data = self.buffer.collect_stable_unsupervised()
         for stable_observation in stable_data:
+            stable_observation.is_stable = True
             _ = self.repository.get_repository_predictions(stable_observation, self.prediction_mode)
 
         self.train_components_unsupervised(unsupervised_observation)
@@ -731,34 +834,36 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             sample_weight=sample_weight,
             seen_at=timestep if timestep is not None else self.supervised_timestep,
         )
-        # Train recent concept representation for active state
-        self.train_components_supervised(supervised_observation)
-        self.train_background_supervised(supervised_observation)
-
         self.set_buffer_timeout(
             self.buffer_timeout_scheduler(self.buffer_timeout_max, self.get_active_state(), supervised_observation)
         )
-        self.buffer.buffer_supervised(
+        supervised_observation = self.buffer.buffer_supervised(
             x,
             y,
             supervised_observation.active_state_id,
             supervised_observation.seen_at,
             supervised_observation.sample_weight,
         )
+        # Train recent concept representation for active state
+        self.train_components_supervised(supervised_observation)
+        self.train_background_supervised(supervised_observation)
+
         stable_data = self.buffer.collect_stable_supervised()
 
         # train supervised representation features and state classifier.
         # In the buffered version, we train on observations coming out
         # of the buffer, rather than new observations.
         for stable_observation in stable_data:
+            stable_observation.is_stable = True
             if stable_observation.y is None:
                 continue
 
             trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
             for state in trained_states:
                 state.learn_one(stable_observation)
+            self.performance_monitor.last_trained_observation = stable_observation
 
-            self.step(stable_observation)
+        self.step(supervised_observation)
 
     def transition_reset(
         self, prev_active_state_id: int, next_active_state_id: int, in_drift: bool, in_warning: bool
@@ -771,3 +876,11 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
         self.buffer_timeout = buffer_timeout
         self.buffer.supervised_buffer_timeout = buffer_timeout
         self.buffer.unsupervised_buffer_timeout = buffer_timeout
+
+
+def add_to_transition_matrix(
+    init_s: int, curr_s: int, matrix: dict[str, dict[str, int]], weight: int = 1
+) -> dict[str, dict[str, int]]:
+    matrix[str(init_s)][str(curr_s)] = matrix[str(init_s)].get(str(curr_s), 0) + weight
+    matrix[str(init_s)]["total"] += weight
+    return matrix

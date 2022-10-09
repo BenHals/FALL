@@ -26,13 +26,16 @@ class ErrorRateRepresentation(ConceptRepresentation):
             return
         while self.new_supervised:
             new_sup_ob = self.new_supervised.popleft()
-            is_correct = new_sup_ob.predictions[self.concept_id] == new_sup_ob.y
-            self.window_error_rate.update(0 if is_correct else 1)
+            new_is_correct = new_sup_ob.predictions[self.concept_id] == new_sup_ob.y
+            self.window_error_rate.update(0 if new_is_correct else 1)
             if len(self.supervised_window) >= self.window_size:
-                discard = self.supervised_window[0]
-                is_correct = discard.predictions[self.concept_id] == discard.y
-                self.window_error_rate.revert(0 if is_correct else 1)
-            self.supervised_window.append(new_sup_ob)
+                _, discard_is_correct = self.supervised_window[0]
+                self.window_error_rate.revert(0 if discard_is_correct else 1)
+
+            # We need to same the correctness from when the observation was added
+            # Because if a prediction changes we may revert a different value than
+            # was added, permanantly biasing the mean.
+            self.supervised_window.append((new_sup_ob, new_is_correct))
 
         avg_error_rate = self.window_error_rate.get()
         self.meta_feature_distributions[0].learn_one(avg_error_rate)
