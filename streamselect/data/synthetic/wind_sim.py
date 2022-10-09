@@ -1,3 +1,4 @@
+# pylint: disable=R0912,R0915
 import math
 from collections import deque
 from itertools import chain
@@ -48,7 +49,7 @@ class PollutionEmission:
             )
         ):
             self.alive = False
-            if not self.child is None:
+            if self.child is not None:
                 self.child.first_emitted = True
         self.last_time_step = ts
 
@@ -97,7 +98,7 @@ class PollutionSource:
     def emit(self) -> PollutionEmission:
         s = self.strength + self.rng.random() * self.strength
         e = PollutionEmission(self.x, self.y, self.initial_radius, s, self.spread_factor, self.min_max_range)
-        if not self.last_emitted is None:
+        if self.last_emitted is not None:
             self.last_emitted.child = e
         else:
             e.first_emitted = True
@@ -118,7 +119,7 @@ class WindSimGenerator(datasets.base.SyntheticDataset):
         self.n_classes = 21
         self.n_targets = 1
         self.target_names = ["class"]
-        self.target_values = [i for i in range(self.n_classes)]
+        self.target_values = list(range(self.n_classes))
         self.n_num_features = num_sensors * 2
         self.n_cat_features = 0
         self.n_categories_per_cat_feature = 0
@@ -297,12 +298,9 @@ class WindSimGenerator(datasets.base.SyntheticDataset):
             )
         )
 
-    def get_direction_from_concept(self, concept_id: int) -> float:
-        return 90.0 * concept_id
-
     def set_wind(self, concept_id: int = 0, direc: Optional[float] = None, strength: Optional[float] = None) -> None:
         self.concept = concept_id
-        wind_direction = self.get_direction_from_concept(concept_id)
+        wind_direction = get_direction_from_concept(concept_id)
         if direc is not None:
             wind_direction = direc
         # In knots: 1 knot = 0.514 m/s
@@ -333,7 +331,7 @@ class WindSimGenerator(datasets.base.SyntheticDataset):
         for p in del_set:
             self.pollution.remove(p)
 
-        for i, s in enumerate(self.sources):
+        for _, s in enumerate(self.sources):
             e = s.update()
             if e:
                 emission = s.emit()
@@ -374,7 +372,7 @@ class WindSimGenerator(datasets.base.SyntheticDataset):
         num_updates_to_process = ts - self.ex
         update_readings = []
         drawn = False
-        for i in range(num_updates_to_process):
+        for _ in range(num_updates_to_process):
             self.update_simulation()
             if draw_intermediary:
                 world = self.update_world()
@@ -402,7 +400,7 @@ class WindSimGenerator(datasets.base.SyntheticDataset):
 
     def prepare_for_use(self) -> None:
         self.emitted_values = [deque(maxlen=self.y_lag)]
-        for i in range(self.n_features):
+        for _ in range(self.n_features):
             self.emitted_values.append(deque(maxlen=self.x_trail + self.y_lag))
         # Skip first 50 values while pollution blows across to sensors
         self.update(self.ex + 50, collect_readings=False)
@@ -421,23 +419,20 @@ class WindSimGenerator(datasets.base.SyntheticDataset):
 
     def get_current_sample(self) -> tuple[np.ndarray, float]:
         trail_features = []
-        for i, x_emissions in enumerate(self.emitted_values[1:]):
+        for _, x_emissions in enumerate(self.emitted_values[1:]):
             trail_features.append(np.array(x_emissions)[: self.x_trail])
 
         X = np.hstack(trail_features).flatten()
         current_y = self.emitted_values[0][-1]
-        y = self.quantize_y(current_y)
+        y = quantize_y(current_y)
         return X, y
-
-    def quantize_y(self, y: float) -> int:
-        return int(min(y // 50, 20))
 
     def next_sample(self, batch_size: int = 1) -> tuple[np.ndarray, np.ndarray]:
         if not self.prepared:
             self.prepare_for_use()
         x_vals = []
         y_vals = []
-        for b in range(batch_size):
+        for _ in range(batch_size):
             readings = self.update(self.ex + 1)
             while len(readings) == 0:
                 readings = self.update(self.ex + 1)
@@ -457,11 +452,11 @@ class WindSimGenerator(datasets.base.SyntheticDataset):
     def get_info(self, concept: Optional[int] = None, strength: Optional[float] = None) -> str:
         c = concept if concept is not None else self.concept
         s = strength if strength is not None else self.wind_strength
-        return f"WIND: Direction: {self.get_direction_from_concept(c)}, Speed: {s}"
+        return f"WIND: Direction: {get_direction_from_concept(c)}, Speed: {s}"
 
     def __iter__(self) -> Generator:
         while True:
-            x = dict()
+            x = {}
             batch_x_vec, batch_y = self.next_sample()
             x_vec = batch_x_vec[0]
             y = batch_y[0]
@@ -478,3 +473,11 @@ def get_circle_proportion(radians: float) -> float:
 
 def world_to_grid(world_x: float, world_y: float, grid_width: float) -> tuple[int, int]:
     return (int(round(world_x / grid_width)), int(round(world_y / grid_width)))
+
+
+def get_direction_from_concept(concept_id: int) -> float:
+    return 90.0 * concept_id
+
+
+def quantize_y(y: float) -> int:
+    return int(min(y // 50, 20))

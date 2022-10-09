@@ -31,7 +31,7 @@ jobs:
       run:
         black --check .
     - name: Run flake8
-      run: flake8 --ignore=E203,W503
+      run: flake8 --ignore=E203,W503,N806,N803,N804
     - name: Run Pylint
       run: pylint streamselect --good-names=i,j,x,y,v,p --disable=duplicate-code
     - name: Run Mypy

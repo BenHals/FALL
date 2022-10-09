@@ -71,7 +71,7 @@ def segment_history(history: np.ndarray, ex: int) -> np.ndarray:
     return starts
 
 
-def plot_TM(
+def plot_tm(
     ax: plt.axis,
     active_state_id: int,
     T: dict[str, dict[str, int]],
@@ -305,7 +305,7 @@ class Monitor:
 
         if self.last_state != classifier.active_state_id:
             self.ax8.clear()
-            plot_TM(
+            plot_tm(
                 self.ax8,
                 perf_monitor.initial_active_state_id,
                 perf_monitor.transition_matrix,

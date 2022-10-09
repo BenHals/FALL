@@ -392,7 +392,7 @@ def calculate_context_to_state_max_f1(
     return context_to_state_max_f1_scores
 
 
-def calculate_CF1_score(concept_segments: list[ConceptSegment], active_state_history: list[StateSegment]) -> float:
+def calculate_cf1_score(concept_segments: list[ConceptSegment], active_state_history: list[StateSegment]) -> float:
     context_to_state_max_f1_scores = calculate_context_to_state_max_f1(concept_segments, active_state_history)
     print(context_to_state_max_f1_scores)
     return statistics.mean(list(context_to_state_max_f1_scores.values()))
@@ -435,5 +435,5 @@ if __name__ == "__main__":
     # calculate_context_to_state_recall(concept_segments, classifier.performance_monitor.active_state_history)
     # plot_system_context_recall(concept_segments, classifier.performance_monitor.active_state_history, [0, 1])
     plot_system_context_precision(concept_segments, classifier.performance_monitor.active_state_history, [0, 1])
-    print(calculate_CF1_score(concept_segments, classifier.performance_monitor.active_state_history))
+    print(calculate_cf1_score(concept_segments, classifier.performance_monitor.active_state_history))
     plt.show()

@@ -6,7 +6,7 @@ from streamselect.concept_representations import ErrorRateRepresentation
 from streamselect.data.datastream import ConceptSegmentDataStream, make_stream_concepts
 from streamselect.data.synthetic.wind_sim import WindSimGenerator
 from streamselect.data.transition_patterns import circular_transition_pattern
-from streamselect.data.utils import Concept, ConceptSegment
+from streamselect.data.utils import Concept
 from streamselect.evaluation.monitoring import Monitor
 from streamselect.repository import AbsoluteValueComparer
 
@@ -44,24 +44,6 @@ if __name__ == "__main__":
     print(pattern)
     print(concept_segments)
     print(datastream)
-    # ap = argparse.ArgumentParser()
-    # ap.add_argument("-ns", "--nsensor", type=int,
-    #     help="Number of sensors", default=8)
-    # ap.add_argument("-st", "--sensortype",
-    #     help="How sensors are arranged", default="circle", choices=["circle", "grid"])
-    # args = vars(ap.parse_args())
 
-    # n_concepts = 4
-    # concepts = []
-    # for c in range(n_concepts):
-    #     concepts.append(np.random.randint(0, 1000))
-    # current_concept = 1
-    # stream = WindSimGenerator(concept=current_concept+1, produce_image=True, num_sensors= args['nsensor'], sensor_pattern=args['sensortype'])
-    # stream.prepare_for_use()
-
-    # classifier = SELeCTClassifier(
-    #     learner=HoeffdingTreeSHAPClassifier)
-
-    # classifier_baseline = AdaptiveRandomForestClassifier()
     monitor = Monitor()
     monitor.run_monitor(datastream, classifier, baseline)
