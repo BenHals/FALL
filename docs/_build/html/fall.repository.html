@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fall.repository package &mdash; FALL 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="fall.states package" href="fall.states.html" />
+    <link rel="prev" title="fall.data package" href="fall.data.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> FALL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">fall</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="fall.html">fall package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="fall.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="fall.adaptive_learning.html">fall.adaptive_learning package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.classifiers.html">fall.classifiers package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.concept_representations.html">fall.concept_representations package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.data.html">fall.data package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">fall.repository package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.states.html">fall.states package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fall.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fall.html#module-fall.utils">fall.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fall.html#module-fall">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FALL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">fall</a> &raquo;</li>
+          <li><a href="fall.html">fall package</a> &raquo;</li>
+      <li>fall.repository package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fall.repository.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fall-repository-package">
+<h1>fall.repository package<a class="headerlink" href="#fall-repository-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-fall.repository.base">
+<span id="fall-repository-base-module"></span><h2>fall.repository.base module<a class="headerlink" href="#module-fall.repository.base" title="Permalink to this heading"></a></h2>
+<p>Base class for maintaining a repository of states.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.base.Repository">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.base.</span></span><span class="sig-name descname"><span class="pre">Repository</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valuation_policy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.ValuationPolicy" title="fall.repository.base.ValuationPolicy"><span class="pre">ValuationPolicy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ValuationPolicy.NoPolicy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Classifier</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fall.repository.base.Repository" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A base repository of states.
+Handles memory management.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valuation_policy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.ValuationPolicy" title="fall.repository.base.ValuationPolicy"><span class="pre">ValuationPolicy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ValuationPolicy.NoPolicy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Classifier</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>max_size: int</dt><dd><p>Default -1
+Maximum number of states able to be stored.
+-1 represents unlimited. Anything else requires
+a deletion valuation policy.</p>
+</dd>
+</dl>
+<p>valuation_policy: ValiationPolicy
+Default NoPolicy</p>
+<blockquote>
+<div><p>The valuation policy to use. Must be set if max_size != -1</p>
+</div></blockquote>
+<dl class="simple">
+<dt>classifier_constructor: Union[Callable[[], Classifier], None]</dt><dd><p>A function to generate a new classifier, or none.
+Must be set to a valid constructor to automatically construct states.</p>
+</dd>
+<dt>representation_constructor: Union[Callable[[int], ConceptRepresentation], None]</dt><dd><p>A function which takes a state_id to generate a new concept representation, or none.
+Must be set to a valid constructor to automatically construct states.</p>
+</dd>
+<dt>train_representation: bool</dt><dd><p>Whether or not new states train representations.
+Must be set to automatically construct states.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_memory_management</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.add" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new state to the repository.
+Throws an error if the state already exists.
+Parameters
+———-
+new_state: State</p>
+<blockquote>
+<div><p>The new state to add.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>skip_memory_management: bool</dt><dd><p>Default: False
+Whether or not to skip memory management.
+Skipping may be useful to aid in transitioning away from the prev state,
+but apply_memory_management should be manually called after this is done.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.add_next_state">
+<span class="sig-name descname"><span class="pre">add_next_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skip_memory_management</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.repository.base.Repository.add_next_state" title="Permalink to this definition"></a></dt>
+<dd><p>Create and add a state with the next valid ID.
+Return this state. Can only use if classifier constructor is set.
+Parameters
+———-</p>
+<dl class="simple">
+<dt>skip_memory_management: bool</dt><dd><p>Default: False
+Whether or not to skip memory management.
+Skipping may be useful to aid in transitioning away from the prev state,
+but apply_memory_management should be manually called after this is done.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.add_transition">
+<span class="sig-name descname"><span class="pre">add_transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_drift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_warning</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.add_transition" title="Permalink to this definition"></a></dt>
+<dd><p>Add a transition to the relevant finite state machines.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.apply_memory_management">
+<span class="sig-name descname"><span class="pre">apply_memory_management</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.apply_memory_management" title="Permalink to this definition"></a></dt>
+<dd><p>Apply memory management to avoid storing more than self.max_size states.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.apply_valuation_policy">
+<span class="sig-name descname"><span class="pre">apply_valuation_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.apply_valuation_policy" title="Permalink to this definition"></a></dt>
+<dd><p>Apply the current valuation policy to a state_id.
+Returns the valuation.</p>
+<p>The valuation should be a float representing the estimated benefit
+provided by the state in the future.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.fifo_valuation">
+<span class="sig-name descname"><span class="pre">fifo_valuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.fifo_valuation" title="Permalink to this definition"></a></dt>
+<dd><p>FIFO policies value states by their age, with a more recent
+age valued higher.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.get_repository_predictions">
+<span class="sig-name descname"><span class="pre">get_repository_predictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.html#fall.utils.Observation" title="fall.utils.Observation"><span class="pre">Observation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fall.repository.base.Repository.get_repository_predictions" title="Permalink to this definition"></a></dt>
+<dd><p>Makes a prediction for states in the repository.
+Returns
+——-</p>
+<blockquote>
+<div><dl>
+<dt>state_predictions: Dict[int, ClfTarget]</dt><dd><p>A dict of state_ids to their predictions.
+Contains all states if prediction_mode == “all”</p>
+<blockquote>
+<div><p>otherwise only the active state prediciton.</p>
+</div></blockquote>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.lru_valuation">
+<span class="sig-name descname"><span class="pre">lru_valuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.lru_valuation" title="Permalink to this definition"></a></dt>
+<dd><p>LRU policies value states by the time since last use, with a more recent
+use valued higher.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.make_next_state">
+<span class="sig-name descname"><span class="pre">make_next_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.repository.base.Repository.make_next_state" title="Permalink to this definition"></a></dt>
+<dd><p>Construct a new state with the next state_id in the sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.make_state">
+<span class="sig-name descname"><span class="pre">make_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.repository.base.Repository.make_state" title="Permalink to this definition"></a></dt>
+<dd><p>Construct a new state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.memory_management_deletion">
+<span class="sig-name descname"><span class="pre">memory_management_deletion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.memory_management_deletion" title="Permalink to this definition"></a></dt>
+<dd><p>Process the deletion of a single state.
+We delete the state with minimum value with regards to the
+valuation_policy parameter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.remove" title="Permalink to this definition"></a></dt>
+<dd><p>remove a state from the repository.
+Throws an error if the state does not exists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.base.Repository.step_all">
+<span class="sig-name descname"><span class="pre">step_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.base.Repository.step_all" title="Permalink to this definition"></a></dt>
+<dd><p>Call step on all states to update statistics.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-fall.repository.comparers">
+<span id="fall-repository-comparers-module"></span><h2>fall.repository.comparers module<a class="headerlink" href="#module-fall.repository.comparers" title="Permalink to this heading"></a></h2>
+<p>Classes to compare concept representations.
+Classes are required to maintain learnable weights over time.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.comparers.AbsoluteValueComparer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.comparers.</span></span><span class="sig-name descname"><span class="pre">AbsoluteValueComparer</span></span><a class="headerlink" href="#fall.repository.comparers.AbsoluteValueComparer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fall.repository.comparers.RepresentationComparer" title="fall.repository.comparers.RepresentationComparer"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepresentationComparer</span></code></a></p>
+<p>A representation comparer which calculates similarity
+based on the absolute value difference in value between representations.
+Where multiple meta-features are present, only the first is compared.</p>
+<p>We assume that values are in the range [0, 1].
+Thus to return similarity, we return 1 - abs(difference).
+E.G: an absolute difference of 0 is a similarity of 1,
+while a difference of 1 is a similarity of 0.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.comparers.AbsoluteValueComparer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.comparers.AbsoluteValueComparer.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.comparers.AbsoluteValueComparer.get_similarity">
+<span class="sig-name descname"><span class="pre">get_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rep_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.comparers.AbsoluteValueComparer.get_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between concept representations.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.comparers.RepresentationComparer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.comparers.</span></span><span class="sig-name descname"><span class="pre">RepresentationComparer</span></span><a class="headerlink" href="#fall.repository.comparers.RepresentationComparer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Base</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>A base class able to compare concept representations.
+Different comparison strategies are available depending on representation.
+May maintain a set of weights to use during comparison.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.comparers.RepresentationComparer.get_similarity">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rep_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.comparers.RepresentationComparer.get_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between concept representations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.comparers.RepresentationComparer.get_state_rep_similarity">
+<span class="sig-name descname"><span class="pre">get_state_rep_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.comparers.RepresentationComparer.get_state_rep_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between a state and a concept representations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.comparers.RepresentationComparer.get_state_similarity">
+<span class="sig-name descname"><span class="pre">get_state_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.comparers.RepresentationComparer.get_state_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between states.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.comparers.RepresentationComparer.train_supervised">
+<span class="sig-name descname"><span class="pre">train_supervised</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repository</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.base.Repository" title="fall.repository.base.Repository"><span class="pre">Repository</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.comparers.RepresentationComparer.train_supervised" title="Permalink to this definition"></a></dt>
+<dd><p>Train trainable components on the repository.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.comparers.RepresentationComparer.train_unsupervised">
+<span class="sig-name descname"><span class="pre">train_unsupervised</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repository</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.base.Repository" title="fall.repository.base.Repository"><span class="pre">Repository</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.comparers.RepresentationComparer.train_unsupervised" title="Permalink to this definition"></a></dt>
+<dd><p>Train trainable components on the repository.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-fall.repository.test_addition">
+<span id="fall-repository-test-addition-module"></span><h2>fall.repository.test_addition module<a class="headerlink" href="#module-fall.repository.test_addition" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_addition.test_add_next_state">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_addition.</span></span><span class="sig-name descname"><span class="pre">test_add_next_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_addition.test_add_next_state" title="Permalink to this definition"></a></dt>
+<dd><p>Test automatic repo state construction.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_addition.test_make_state">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_addition.</span></span><span class="sig-name descname"><span class="pre">test_make_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_addition.test_make_state" title="Permalink to this definition"></a></dt>
+<dd><p>Test the make state function.</p>
+</dd></dl>
+
+</section>
+<section id="module-fall.repository.test_comparers">
+<span id="fall-repository-test-comparers-module"></span><h2>fall.repository.test_comparers module<a class="headerlink" href="#module-fall.repository.test_comparers" title="Permalink to this heading"></a></h2>
+<p>Testing concept representations comparison.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_comparers.test_absolute_value_comparer">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_comparers.</span></span><span class="sig-name descname"><span class="pre">test_absolute_value_comparer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_comparers.test_absolute_value_comparer" title="Permalink to this definition"></a></dt>
+<dd><p>Test comparing absolute values.</p>
+</dd></dl>
+
+</section>
+<section id="module-fall.repository.test_deletion">
+<span id="fall-repository-test-deletion-module"></span><h2>fall.repository.test_deletion module<a class="headerlink" href="#module-fall.repository.test_deletion" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_deletion.test_fifo_policy">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_deletion.</span></span><span class="sig-name descname"><span class="pre">test_fifo_policy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_deletion.test_fifo_policy" title="Permalink to this definition"></a></dt>
+<dd><p>Test FIFO policy, should delete oldest state</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_deletion.test_lru_policy">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_deletion.</span></span><span class="sig-name descname"><span class="pre">test_lru_policy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_deletion.test_lru_policy" title="Permalink to this definition"></a></dt>
+<dd><p>Test LRU policy, should delete least recently used state</p>
+</dd></dl>
+
+</section>
+<section id="module-fall.repository.test_repository">
+<span id="fall-repository-test-repository-module"></span><h2>fall.repository.test_repository module<a class="headerlink" href="#module-fall.repository.test_repository" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_repository.test_state_predictions_active">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_repository.</span></span><span class="sig-name descname"><span class="pre">test_state_predictions_active</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_repository.test_state_predictions_active" title="Permalink to this definition"></a></dt>
+<dd><p>Test predictions in active mode</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_repository.test_state_predictions_all">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_repository.</span></span><span class="sig-name descname"><span class="pre">test_state_predictions_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_repository.test_state_predictions_all" title="Permalink to this definition"></a></dt>
+<dd><p>Test predictions in all mode</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_repository.test_step_states">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_repository.</span></span><span class="sig-name descname"><span class="pre">test_step_states</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_repository.test_step_states" title="Permalink to this definition"></a></dt>
+<dd><p>Test step_all statistics.</p>
+</dd></dl>
+
+</section>
+<section id="module-fall.repository.test_transition_fsm">
+<span id="fall-repository-test-transition-fsm-module"></span><h2>fall.repository.test_transition_fsm module<a class="headerlink" href="#module-fall.repository.test_transition_fsm" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_transition_fsm.test_add_transition">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_transition_fsm.</span></span><span class="sig-name descname"><span class="pre">test_add_transition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_transition_fsm.test_add_transition" title="Permalink to this definition"></a></dt>
+<dd><p>Test adding a transition to the transition FSM</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_transition_fsm.test_del_retain_transition">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_transition_fsm.</span></span><span class="sig-name descname"><span class="pre">test_del_retain_transition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_transition_fsm.test_del_retain_transition" title="Permalink to this definition"></a></dt>
+<dd><p>Test deleting a transition, but maintaining
+indirect weights for 1 step.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.repository.test_transition_fsm.test_del_transition">
+<span class="sig-prename descclassname"><span class="pre">fall.repository.test_transition_fsm.</span></span><span class="sig-name descname"><span class="pre">test_del_transition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.test_transition_fsm.test_del_transition" title="Permalink to this definition"></a></dt>
+<dd><p>Test deleting a transition from the transition FSM</p>
+</dd></dl>
+
+</section>
+<section id="module-fall.repository.transition_fsm">
+<span id="fall-repository-transition-fsm-module"></span><h2>fall.repository.transition_fsm module<a class="headerlink" href="#module-fall.repository.transition_fsm" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionCounter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.transition_fsm.</span></span><span class="sig-name descname"><span class="pre">TransitionCounter</span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionCounter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Tracks transition weights.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionCounter.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionCounter.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionCounter.add_direct">
+<span class="sig-name descname"><span class="pre">add_direct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionCounter.add_direct" title="Permalink to this definition"></a></dt>
+<dd><p>Add Direct transition between two states.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionCounter.add_indirect">
+<span class="sig-name descname"><span class="pre">add_indirect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionCounter.add_indirect" title="Permalink to this definition"></a></dt>
+<dd><p>Add Indirect transition, i.e., mediated by some deleted state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionCounter.rem_direct">
+<span class="sig-name descname"><span class="pre">rem_direct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionCounter.rem_direct" title="Permalink to this definition"></a></dt>
+<dd><p>Remove Direct transition between two states.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionCounter.rem_indirect">
+<span class="sig-name descname"><span class="pre">rem_indirect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionCounter.rem_indirect" title="Permalink to this definition"></a></dt>
+<dd><p>Remove Indirect transition, i.e., mediated by some deleted state.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionFSM">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.transition_fsm.</span></span><span class="sig-name descname"><span class="pre">TransitionFSM</span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionFSM" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Describes the transitions between states, or active state history.
+Can be used to calculate state priors. Uses an adjacency list internally.
+NOTE: States should have unique state_ids.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionFSM.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionFSM.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionFSM.add_transition">
+<span class="sig-name descname"><span class="pre">add_transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionFSM.add_transition" title="Permalink to this definition"></a></dt>
+<dd><p>Record a transition from a state with given id to another state with given id.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionFSM.delete_state">
+<span class="sig-name descname"><span class="pre">delete_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">del_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_indirect_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionFSM.delete_state" title="Permalink to this definition"></a></dt>
+<dd><p>Delete a state from the FSM.
+If retain_indirect_weight is set, we maintain weight between previous
+state and next states as indirect. Since we do not know how to assign this weight, it
+is proportional.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionFSM.get_mle_prev_state">
+<span class="sig-name descname"><span class="pre">get_mle_prev_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionFSM.get_mle_prev_state" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the id of the most likely previous state, and number of transitions.
+If no transitions exist, returns itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.transition_fsm.TransitionFSM.get_transition_weight">
+<span class="sig-name descname"><span class="pre">get_transition_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothing_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.transition_fsm.TransitionFSM.get_transition_weight" title="Permalink to this definition"></a></dt>
+<dd><p>Get the weight associated with a given transition. If not found, return the min value.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-fall.repository">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fall.repository" title="Permalink to this heading"></a></h2>
+<p>Handles the creation of a repository containing previously built states.</p>
+<p>A data stream can be considered as a sequence of concepts associated with some underlying environmental context.
+Each concept may feature a distinct joint distribution of data, so should be learned by a distinct classifier.
+When concepts may reoccur over time, we wish to retain these classifiers for reuse, essentially creating a
+finite state machine.
+The code in this module handles the mechanisms for representing each state, and the repository which stores
+constructed states and their memory management.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.AbsoluteValueComparer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.</span></span><span class="sig-name descname"><span class="pre">AbsoluteValueComparer</span></span><a class="headerlink" href="#fall.repository.AbsoluteValueComparer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fall.repository.comparers.RepresentationComparer" title="fall.repository.comparers.RepresentationComparer"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepresentationComparer</span></code></a></p>
+<p>A representation comparer which calculates similarity
+based on the absolute value difference in value between representations.
+Where multiple meta-features are present, only the first is compared.</p>
+<p>We assume that values are in the range [0, 1].
+Thus to return similarity, we return 1 - abs(difference).
+E.G: an absolute difference of 0 is a similarity of 1,
+while a difference of 1 is a similarity of 0.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.AbsoluteValueComparer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.AbsoluteValueComparer.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.AbsoluteValueComparer.get_similarity">
+<span class="sig-name descname"><span class="pre">get_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rep_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.AbsoluteValueComparer.get_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between concept representations.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.Repository">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.</span></span><span class="sig-name descname"><span class="pre">Repository</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valuation_policy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.ValuationPolicy" title="fall.repository.base.ValuationPolicy"><span class="pre">ValuationPolicy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ValuationPolicy.NoPolicy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Classifier</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fall.repository.Repository" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A base repository of states.
+Handles memory management.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valuation_policy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.ValuationPolicy" title="fall.repository.base.ValuationPolicy"><span class="pre">ValuationPolicy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ValuationPolicy.NoPolicy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Classifier</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.Repository.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>max_size: int</dt><dd><p>Default -1
+Maximum number of states able to be stored.
+-1 represents unlimited. Anything else requires
+a deletion valuation policy.</p>
+</dd>
+</dl>
+<p>valuation_policy: ValiationPolicy
+Default NoPolicy</p>
+<blockquote>
+<div><p>The valuation policy to use. Must be set if max_size != -1</p>
+</div></blockquote>
+<dl class="simple">
+<dt>classifier_constructor: Union[Callable[[], Classifier], None]</dt><dd><p>A function to generate a new classifier, or none.
+Must be set to a valid constructor to automatically construct states.</p>
+</dd>
+<dt>representation_constructor: Union[Callable[[int], ConceptRepresentation], None]</dt><dd><p>A function which takes a state_id to generate a new concept representation, or none.
+Must be set to a valid constructor to automatically construct states.</p>
+</dd>
+<dt>train_representation: bool</dt><dd><p>Whether or not new states train representations.
+Must be set to automatically construct states.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_memory_management</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.Repository.add" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new state to the repository.
+Throws an error if the state already exists.
+Parameters
+———-
+new_state: State</p>
+<blockquote>
+<div><p>The new state to add.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>skip_memory_management: bool</dt><dd><p>Default: False
+Whether or not to skip memory management.
+Skipping may be useful to aid in transitioning away from the prev state,
+but apply_memory_management should be manually called after this is done.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.add_next_state">
+<span class="sig-name descname"><span class="pre">add_next_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skip_memory_management</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.repository.Repository.add_next_state" title="Permalink to this definition"></a></dt>
+<dd><p>Create and add a state with the next valid ID.
+Return this state. Can only use if classifier constructor is set.
+Parameters
+———-</p>
+<dl class="simple">
+<dt>skip_memory_management: bool</dt><dd><p>Default: False
+Whether or not to skip memory management.
+Skipping may be useful to aid in transitioning away from the prev state,
+but apply_memory_management should be manually called after this is done.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.add_transition">
+<span class="sig-name descname"><span class="pre">add_transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_drift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_warning</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.Repository.add_transition" title="Permalink to this definition"></a></dt>
+<dd><p>Add a transition to the relevant finite state machines.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.apply_memory_management">
+<span class="sig-name descname"><span class="pre">apply_memory_management</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.Repository.apply_memory_management" title="Permalink to this definition"></a></dt>
+<dd><p>Apply memory management to avoid storing more than self.max_size states.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.apply_valuation_policy">
+<span class="sig-name descname"><span class="pre">apply_valuation_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.Repository.apply_valuation_policy" title="Permalink to this definition"></a></dt>
+<dd><p>Apply the current valuation policy to a state_id.
+Returns the valuation.</p>
+<p>The valuation should be a float representing the estimated benefit
+provided by the state in the future.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.fifo_valuation">
+<span class="sig-name descname"><span class="pre">fifo_valuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.Repository.fifo_valuation" title="Permalink to this definition"></a></dt>
+<dd><p>FIFO policies value states by their age, with a more recent
+age valued higher.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.get_repository_predictions">
+<span class="sig-name descname"><span class="pre">get_repository_predictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.html#fall.utils.Observation" title="fall.utils.Observation"><span class="pre">Observation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fall.repository.Repository.get_repository_predictions" title="Permalink to this definition"></a></dt>
+<dd><p>Makes a prediction for states in the repository.
+Returns
+——-</p>
+<blockquote>
+<div><dl>
+<dt>state_predictions: Dict[int, ClfTarget]</dt><dd><p>A dict of state_ids to their predictions.
+Contains all states if prediction_mode == “all”</p>
+<blockquote>
+<div><p>otherwise only the active state prediciton.</p>
+</div></blockquote>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.lru_valuation">
+<span class="sig-name descname"><span class="pre">lru_valuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.Repository.lru_valuation" title="Permalink to this definition"></a></dt>
+<dd><p>LRU policies value states by the time since last use, with a more recent
+use valued higher.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.make_next_state">
+<span class="sig-name descname"><span class="pre">make_next_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.repository.Repository.make_next_state" title="Permalink to this definition"></a></dt>
+<dd><p>Construct a new state with the next state_id in the sequence.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.make_state">
+<span class="sig-name descname"><span class="pre">make_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.repository.Repository.make_state" title="Permalink to this definition"></a></dt>
+<dd><p>Construct a new state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.memory_management_deletion">
+<span class="sig-name descname"><span class="pre">memory_management_deletion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.Repository.memory_management_deletion" title="Permalink to this definition"></a></dt>
+<dd><p>Process the deletion of a single state.
+We delete the state with minimum value with regards to the
+valuation_policy parameter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.Repository.remove" title="Permalink to this definition"></a></dt>
+<dd><p>remove a state from the repository.
+Throws an error if the state does not exists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.Repository.step_all">
+<span class="sig-name descname"><span class="pre">step_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.Repository.step_all" title="Permalink to this definition"></a></dt>
+<dd><p>Call step on all states to update statistics.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.RepresentationComparer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.</span></span><span class="sig-name descname"><span class="pre">RepresentationComparer</span></span><a class="headerlink" href="#fall.repository.RepresentationComparer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Base</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>A base class able to compare concept representations.
+Different comparison strategies are available depending on representation.
+May maintain a set of weights to use during comparison.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.RepresentationComparer.get_similarity">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rep_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.RepresentationComparer.get_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between concept representations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.RepresentationComparer.get_state_rep_similarity">
+<span class="sig-name descname"><span class="pre">get_state_rep_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rep_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.RepresentationComparer.get_state_rep_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between a state and a concept representations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.RepresentationComparer.get_state_similarity">
+<span class="sig-name descname"><span class="pre">get_state_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.states.html#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.RepresentationComparer.get_state_similarity" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the similarity between states.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.RepresentationComparer.train_supervised">
+<span class="sig-name descname"><span class="pre">train_supervised</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repository</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.base.Repository" title="fall.repository.base.Repository"><span class="pre">Repository</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.RepresentationComparer.train_supervised" title="Permalink to this definition"></a></dt>
+<dd><p>Train trainable components on the repository.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.RepresentationComparer.train_unsupervised">
+<span class="sig-name descname"><span class="pre">train_unsupervised</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repository</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fall.repository.base.Repository" title="fall.repository.base.Repository"><span class="pre">Repository</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.RepresentationComparer.train_unsupervised" title="Permalink to this definition"></a></dt>
+<dd><p>Train trainable components on the repository.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.TransitionFSM">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.</span></span><span class="sig-name descname"><span class="pre">TransitionFSM</span></span><a class="headerlink" href="#fall.repository.TransitionFSM" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Describes the transitions between states, or active state history.
+Can be used to calculate state priors. Uses an adjacency list internally.
+NOTE: States should have unique state_ids.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.TransitionFSM.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.TransitionFSM.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.TransitionFSM.add_transition">
+<span class="sig-name descname"><span class="pre">add_transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.TransitionFSM.add_transition" title="Permalink to this definition"></a></dt>
+<dd><p>Record a transition from a state with given id to another state with given id.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.TransitionFSM.delete_state">
+<span class="sig-name descname"><span class="pre">delete_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">del_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retain_indirect_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.repository.TransitionFSM.delete_state" title="Permalink to this definition"></a></dt>
+<dd><p>Delete a state from the FSM.
+If retain_indirect_weight is set, we maintain weight between previous
+state and next states as indirect. Since we do not know how to assign this weight, it
+is proportional.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.TransitionFSM.get_mle_prev_state">
+<span class="sig-name descname"><span class="pre">get_mle_prev_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fall.repository.TransitionFSM.get_mle_prev_state" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the id of the most likely previous state, and number of transitions.
+If no transitions exist, returns itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.repository.TransitionFSM.get_transition_weight">
+<span class="sig-name descname"><span class="pre">get_transition_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothing_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.repository.TransitionFSM.get_transition_weight" title="Permalink to this definition"></a></dt>
+<dd><p>Get the weight associated with a given transition. If not found, return the min value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.repository.ValuationPolicy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.repository.</span></span><span class="sig-name descname"><span class="pre">ValuationPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fall.repository.ValuationPolicy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fall.repository.ValuationPolicy.Accuracy">
+<span class="sig-name descname"><span class="pre">Accuracy</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#fall.repository.ValuationPolicy.Accuracy" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fall.repository.ValuationPolicy.FIFO">
+<span class="sig-name descname"><span class="pre">FIFO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#fall.repository.ValuationPolicy.FIFO" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fall.repository.ValuationPolicy.LRU">
+<span class="sig-name descname"><span class="pre">LRU</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#fall.repository.ValuationPolicy.LRU" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fall.repository.ValuationPolicy.NoPolicy">
+<span class="sig-name descname"><span class="pre">NoPolicy</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(0,)</span></em><a class="headerlink" href="#fall.repository.ValuationPolicy.NoPolicy" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fall.data.html" class="btn btn-neutral float-left" title="fall.data package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fall.states.html" class="btn btn-neutral float-right" title="fall.states package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ben Halstead.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

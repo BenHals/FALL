@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fall.states package &mdash; FALL 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="fall.repository package" href="fall.repository.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> FALL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">fall</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="fall.html">fall package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="fall.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="fall.adaptive_learning.html">fall.adaptive_learning package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.classifiers.html">fall.classifiers package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.concept_representations.html">fall.concept_representations package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.data.html">fall.data package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="fall.repository.html">fall.repository package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">fall.states package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fall.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fall.html#module-fall.utils">fall.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fall.html#module-fall">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FALL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">fall</a> &raquo;</li>
+          <li><a href="fall.html">fall package</a> &raquo;</li>
+      <li>fall.states package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fall.states.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fall-states-package">
+<h1>fall.states package<a class="headerlink" href="#fall-states-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-fall.states.base">
+<span id="fall-states-base-module"></span><h2>fall.states.base module<a class="headerlink" href="#module-fall.states.base" title="Permalink to this heading"></a></h2>
+<p>Base state class</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.states.base.State">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.states.base.</span></span><span class="sig-name descname"><span class="pre">State</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Classifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fall.states.base.State" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A base state containing a Classifier and ConceptRepresentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Classifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.base.State.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.add_active_state_relevance">
+<span class="sig-name descname"><span class="pre">add_active_state_relevance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active_state_relevance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.base.State.add_active_state_relevance" title="Permalink to this definition"></a></dt>
+<dd><p>Update statistics tracking active_state_relevance.
+Should only be called when an observation is deemed stable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.deactivate_train_representation">
+<span class="sig-name descname"><span class="pre">deactivate_train_representation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.base.State.deactivate_train_representation" title="Permalink to this definition"></a></dt>
+<dd><p>Deactivate training representation.
+Some representations are not trained, e.g., implied error rate.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.get_current_relevance">
+<span class="sig-name descname"><span class="pre">get_current_relevance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.states.base.State.get_current_relevance" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.get_in_concept_relevance">
+<span class="sig-name descname"><span class="pre">get_in_concept_relevance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.states.base.State.get_in_concept_relevance" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.get_self_representation">
+<span class="sig-name descname"><span class="pre">get_self_representation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></span><a class="headerlink" href="#fall.states.base.State.get_self_representation" title="Permalink to this definition"></a></dt>
+<dd><p>Get the concept representation using this states classifier,
+on data drawn from this concept.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.learn_one">
+<span class="sig-name descname"><span class="pre">learn_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">supervised_observation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.html#fall.utils.Observation" title="fall.utils.Observation"><span class="pre">Observation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_train_classifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.states.base.State.learn_one" title="Permalink to this definition"></a></dt>
+<dd><p>Train the classifier and concept representation.
+concept_id determines the concept the observation is thought to be drawn from.
+The state classifier is NOT trained on observations with a concept_id which does not match
+the state_id unless force_train_classifier is set, however other statistics are updated.</p>
+<dl class="simple">
+<dt>supervised_observation: Observation</dt><dd><p>The observation to train on. Must be supervised, i.e., have a valid y value.
+The prediction on the observation is not used, but a new one is added to ensure
+that the most up to date predictions are used.</p>
+</dd>
+<dt>force_train_classifier: bool</dt><dd><p>Default: False
+Forces the state classifier to train on an observation regardless of which concept_id
+the observation is from. When false, only observations with with an active_state_id
+matching the state_id are used to train the classifier.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.predict_one">
+<span class="sig-name descname"><span class="pre">predict_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unsupervised_observation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.html#fall.utils.Observation" title="fall.utils.Observation"><span class="pre">Observation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_train_own_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fall.states.base.State.predict_one" title="Permalink to this definition"></a></dt>
+<dd><p>Make a prediction using the state classifier.
+Also trains unsupervised components of the classifier and concept representation.</p>
+<dl class="simple">
+<dt>unsupervised_observation: Observation</dt><dd><p>An unsupervised observation, may have a None y.
+Predictions for the state_id will be added to observation.predictions.</p>
+</dd>
+<dt>force_train_own_representation: Bool</dt><dd><p>Default: False
+Forces the state to train the concept_representation representing data with the current state_id.
+If false, we train the representation representing the active_state_id associated with the observation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.base.State.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_active</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.base.State.step" title="Permalink to this definition"></a></dt>
+<dd><p>Step states tracking statistics</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-fall.states.test_states">
+<span id="fall-states-test-states-module"></span><h2>fall.states.test_states module<a class="headerlink" href="#module-fall.states.test_states" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.states.test_states.test_classifier_equivalence">
+<span class="sig-prename descclassname"><span class="pre">fall.states.test_states.</span></span><span class="sig-name descname"><span class="pre">test_classifier_equivalence</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.test_states.test_classifier_equivalence" title="Permalink to this definition"></a></dt>
+<dd><p>Calling predict_one and learn_one on a state
+should be equivalent to calling directly on the underlying state.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.states.test_states.test_classifier_inactive">
+<span class="sig-prename descclassname"><span class="pre">fall.states.test_states.</span></span><span class="sig-name descname"><span class="pre">test_classifier_inactive</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.test_states.test_classifier_inactive" title="Permalink to this definition"></a></dt>
+<dd><p>Calling predict_one and learn_one on a state
+should be equivalent to calling directly on the underlying state.
+Since the state is not active, the classifier should not train.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.states.test_states.test_classifier_inactive_force">
+<span class="sig-prename descclassname"><span class="pre">fall.states.test_states.</span></span><span class="sig-name descname"><span class="pre">test_classifier_inactive_force</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.test_states.test_classifier_inactive_force" title="Permalink to this definition"></a></dt>
+<dd><p>Calling predict_one and learn_one on a state
+should be equivalent to calling directly on the underlying state.
+Since the state is not active, but training is forced, the classifier should train.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.states.test_states.test_representation_equivalence">
+<span class="sig-prename descclassname"><span class="pre">fall.states.test_states.</span></span><span class="sig-name descname"><span class="pre">test_representation_equivalence</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.test_states.test_representation_equivalence" title="Permalink to this definition"></a></dt>
+<dd><p>Calling predict_one and learn_one on a state
+should be equivalent to calling directly on the underlying concept_representaion.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.states.test_states.test_representation_equivalence_inactive">
+<span class="sig-prename descclassname"><span class="pre">fall.states.test_states.</span></span><span class="sig-name descname"><span class="pre">test_representation_equivalence_inactive</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.test_states.test_representation_equivalence_inactive" title="Permalink to this definition"></a></dt>
+<dd><p>Calling predict_one and learn_one on a state when it is unactive.
+should be equivalent to calling directly on the underlying concept_representaion.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.states.test_states.test_representation_equivalence_inactive_forced">
+<span class="sig-prename descclassname"><span class="pre">fall.states.test_states.</span></span><span class="sig-name descname"><span class="pre">test_representation_equivalence_inactive_forced</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.test_states.test_representation_equivalence_inactive_forced" title="Permalink to this definition"></a></dt>
+<dd><p>Calling predict_one and learn_one on a state when it is unactive.
+should be equivalent to calling directly on the underlying concept_representaion.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fall.states.test_states.test_representation_notrain">
+<span class="sig-prename descclassname"><span class="pre">fall.states.test_states.</span></span><span class="sig-name descname"><span class="pre">test_representation_notrain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.test_states.test_representation_notrain" title="Permalink to this definition"></a></dt>
+<dd><p>Calling predict_one and learn_one on a state
+should not update the representation if disabled.</p>
+</dd></dl>
+
+</section>
+<section id="module-fall.states">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fall.states" title="Permalink to this heading"></a></h2>
+<p>Handles states, where a state is a (Classifier, ConceptRepresentation) pair</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fall.states.State">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fall.states.</span></span><span class="sig-name descname"><span class="pre">State</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Classifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fall.states.State" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A base state containing a Classifier and ConceptRepresentation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Classifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">representation_constructor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.State.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.add_active_state_relevance">
+<span class="sig-name descname"><span class="pre">add_active_state_relevance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active_state_relevance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.State.add_active_state_relevance" title="Permalink to this definition"></a></dt>
+<dd><p>Update statistics tracking active_state_relevance.
+Should only be called when an observation is deemed stable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.deactivate_train_representation">
+<span class="sig-name descname"><span class="pre">deactivate_train_representation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.State.deactivate_train_representation" title="Permalink to this definition"></a></dt>
+<dd><p>Deactivate training representation.
+Some representations are not trained, e.g., implied error rate.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.get_current_relevance">
+<span class="sig-name descname"><span class="pre">get_current_relevance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.states.State.get_current_relevance" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.get_in_concept_relevance">
+<span class="sig-name descname"><span class="pre">get_in_concept_relevance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fall.states.State.get_in_concept_relevance" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.get_self_representation">
+<span class="sig-name descname"><span class="pre">get_self_representation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="fall.concept_representations.html#fall.concept_representations.base.ConceptRepresentation" title="fall.concept_representations.base.ConceptRepresentation"><span class="pre">ConceptRepresentation</span></a></span></span><a class="headerlink" href="#fall.states.State.get_self_representation" title="Permalink to this definition"></a></dt>
+<dd><p>Get the concept representation using this states classifier,
+on data drawn from this concept.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.learn_one">
+<span class="sig-name descname"><span class="pre">learn_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">supervised_observation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.html#fall.utils.Observation" title="fall.utils.Observation"><span class="pre">Observation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_train_classifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fall.states.base.State" title="fall.states.base.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#fall.states.State.learn_one" title="Permalink to this definition"></a></dt>
+<dd><p>Train the classifier and concept representation.
+concept_id determines the concept the observation is thought to be drawn from.
+The state classifier is NOT trained on observations with a concept_id which does not match
+the state_id unless force_train_classifier is set, however other statistics are updated.</p>
+<dl class="simple">
+<dt>supervised_observation: Observation</dt><dd><p>The observation to train on. Must be supervised, i.e., have a valid y value.
+The prediction on the observation is not used, but a new one is added to ensure
+that the most up to date predictions are used.</p>
+</dd>
+<dt>force_train_classifier: bool</dt><dd><p>Default: False
+Forces the state classifier to train on an observation regardless of which concept_id
+the observation is from. When false, only observations with with an active_state_id
+matching the state_id are used to train the classifier.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.predict_one">
+<span class="sig-name descname"><span class="pre">predict_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unsupervised_observation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="fall.html#fall.utils.Observation" title="fall.utils.Observation"><span class="pre">Observation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_train_own_representation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fall.states.State.predict_one" title="Permalink to this definition"></a></dt>
+<dd><p>Make a prediction using the state classifier.
+Also trains unsupervised components of the classifier and concept representation.</p>
+<dl class="simple">
+<dt>unsupervised_observation: Observation</dt><dd><p>An unsupervised observation, may have a None y.
+Predictions for the state_id will be added to observation.predictions.</p>
+</dd>
+<dt>force_train_own_representation: Bool</dt><dd><p>Default: False
+Forces the state to train the concept_representation representing data with the current state_id.
+If false, we train the representation representing the active_state_id associated with the observation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fall.states.State.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_active</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fall.states.State.step" title="Permalink to this definition"></a></dt>
+<dd><p>Step states tracking statistics</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fall.repository.html" class="btn btn-neutral float-left" title="fall.repository package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Ben Halstead.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
