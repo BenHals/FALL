@@ -131,6 +131,5 @@ dmypy.json
 .vscode/
 settings.json
 
-docs/_build/
 docs/_static/
 docs/_templates
