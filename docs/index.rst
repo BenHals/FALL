@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-FALL - Frameword for Adaptive Life-Long Learning
+FALL - Framework for Adaptive Life-Long Learning
 ================================================
 
 FALL is designed to enable both practitioners and researchers to develop and implement machine learning systems for streaming data, in the presence of changing conditions.
