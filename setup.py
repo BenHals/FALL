@@ -1,4 +1,4 @@
-""" Setup package - using setup.cfg as main setup entry point. """
 from setuptools import setup
 
-setup()
+if __name__ == "__main__":
+    setup()

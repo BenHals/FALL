@@ -1,10 +1,32 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "FALL"
+version = "0.0.1"
+description = "Real-time lifelong machine learning"
+readme = "README.md"
+authors = [{ name = "Ben Halstead", email = "benhalstd@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: BSD 3-Clause License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["machine learning", "data stream"]
+dependencies = [
+    "river"
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = ["black", "flake8", "ipython", "matplotlib", "pytest", "mypy", "pylint", "networkx"]
+
+[project.urls]
+Homepage = "https://benhalstead.dev/FALL"
+
 # Example configuration for Black.
-
-# NOTE: you have to use single-quoted strings in TOML for regular expressions.
-# It's the equivalent of r-strings in Python.  Multiline strings are treated as
-# verbose regular expressions by Black.  Use [ ] to denote a significant space
-# character.
-
 [tool.black]
 line-length = 119
 target-version = ['py39']
