@@ -11,9 +11,9 @@ FALL is designed to enable both practitioners and researchers to develop and imp
 FALL is a framework for building adaptive learning systems capable of incrementally learning from streaming data, and adapting to changing conditions.
 FALL is modular, based around a standard architecture for adaptive learning. This enables existing methods to be easily recreated, as well as novel methods to be easily implemented without re-implementing standard components.
 
-.. image:: https://github.com/BenHals/FALL/blob/main/adaptation.gif
+.. image:: ../adaptation.gif
   :width: 800
-  :alt: Alternative text
+  :alt: Adaptive Learning
 
 Installation
 ============
@@ -29,9 +29,6 @@ Examples
 ========
 
 Please refer to the binder `link <https://mybinder.org/v2/gh/BenHals/FALL/HEAD?labpath=examples%2F>`_ for interactive examples. 
-
-Contents
-========
 
 .. toctree::
    :maxdepth: 2
