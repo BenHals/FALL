@@ -49,5 +49,5 @@ if __name__ == "__main__":
     print(concept_segments)
     print(datastream)
 
-    monitor = Monitor()
+    monitor = Monitor(figsize=(12, 8))
     monitor.run_monitor(datastream, classifier, baseline)
