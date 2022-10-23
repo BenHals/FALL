@@ -1,0 +1,15 @@
+black==22.3.0
+flake8==4.0.1
+ipykernel==6.16.0
+ipython==8.5.0
+matplotlib==3.3.0
+mypy==0.931
+numpy==1.23.3
+pandas==1.5.0
+pre-commit==2.17.0
+pylint==2.12.2
+pytest==6.2.4
+river==0.13.0
+Sphinx==5.2.3
+sphinx-rtd-theme==1.0.0
+networkx==2.6.2
