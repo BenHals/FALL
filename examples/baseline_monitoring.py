@@ -2,7 +2,6 @@ from river.drift.adwin import ADWIN
 from river.tree.hoeffding_tree_classifier import HoeffdingTreeClassifier
 
 from fall.adaptive_learning.base import BaseBufferedAdaptiveLearner
-from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
 from fall.concept_representations import ErrorRateRepresentation
 from fall.data.datastream import ConceptSegmentDataStream, make_stream_concepts
 from fall.data.synthetic.wind_sim import WindSimGenerator
@@ -48,5 +47,5 @@ if __name__ == "__main__":
     print(concept_segments)
     print(datastream)
 
-    monitor = Monitor()
+    monitor = Monitor(figsize=(20, 10))
     monitor.run_monitor(datastream, classifier, baseline)

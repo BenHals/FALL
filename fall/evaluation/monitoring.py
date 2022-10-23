@@ -100,7 +100,8 @@ def plot_tm(
 
 
 class Monitor:
-    def __init__(self) -> None:
+    def __init__(self, figsize: tuple[int, int] = (10, 5)) -> None:
+        self.figsize = figsize
         self.history_len = 500
         self.count = 0
         self.ex = -1
@@ -290,7 +291,7 @@ class Monitor:
             F1_text.set_text(f"F1: {self.F1:.2f}")
 
             concept_likelihood_text.set_text(
-                f"Concept Likelihoods: {', '.join(f'{k}: {v:.2%}' for k,v in self.adwin_likelihood_estimate.items())}"
+                f"State Relevance: {', '.join(f'{k}: {v:.2%}' for k,v in self.adwin_likelihood_estimate.items())}"
             )
             merge_sequence_text = " ".join(f"{k} -> {v}" for k, v in self.merges.items())
             merge_text.set_text(f"Merges: {merge_sequence_text}")
@@ -361,7 +362,7 @@ class Monitor:
         self, stream: ConceptSegmentDataStream, classifier: BaseAdaptiveLearner, classifier_baseline: Classifier
     ) -> None:
 
-        self.fig = plt.figure(figsize=(10, 5))
+        self.fig = plt.figure(figsize=self.figsize)
         self.gs = self.fig.add_gridspec(
             7, 5, height_ratios=[0.5, 0.5, 0.5, 1, 1, 1, 1], width_ratios=[1, 1, 1, 1, 1.5]
         )
@@ -407,7 +408,7 @@ class Monitor:
             top=False,  # ticks along the top edge are off
             labelbottom=False,
         )
-        self.ax6.set_title("Concept Likelihoods")
+        self.ax6.set_title("State Relevance")
 
         self.ax4 = self.fig.add_subplot(self.gs[0:3, 3])
         self.ax4.set_frame_on(False)
@@ -471,7 +472,7 @@ class Monitor:
         recall_text = self.ax5.text(0.1, 0.3, "Recall:      ", horizontalalignment="left")
         precision_text = self.ax5.text(0.1, 0.2, "precision:      ", horizontalalignment="left")
         F1_text = self.ax5.text(0.1, 0.1, "F1:      ", horizontalalignment="left")
-        concept_likelihood_text = self.ax7.text(0, 0.8, "Concept Likelihoods: ", horizontalalignment="left")
+        concept_likelihood_text = self.ax7.text(0, 0.8, "State Relevance: ", horizontalalignment="left")
         merge_text = self.ax7.text(0, 0.5, "Merges: ", horizontalalignment="left")
         deletion_text = self.ax7.text(0, 0.2, "Deletions: ", horizontalalignment="left")
         text_obs = {
