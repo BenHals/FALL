@@ -163,7 +163,7 @@ class Monitor:
         text_obs: Any,
         flush: bool = False,
         updates_per_frame: int = 1,
-        pbar: Optional[tqdm] = None
+        pbar: Optional[tqdm] = None,
     ) -> list[Any]:
         for update_frame in range(updates_per_frame):
             X, y = next(stream_iter)
@@ -367,35 +367,40 @@ class Monitor:
         return artists
 
     def run_monitor(
-        self, stream: ConceptSegmentDataStream, classifier: BaseAdaptiveLearner, classifier_baseline: Classifier, 
-        total_n_frames: int = -1, updates_per_frame: int = 5, interval: float = 1.0
+        self,
+        stream: ConceptSegmentDataStream,
+        classifier: BaseAdaptiveLearner,
+        classifier_baseline: Classifier,
+        total_n_frames: int = -1,
+        updates_per_frame: int = 5,
+        interval: float = 1.0,
     ) -> Animation:
         """
         Parameters
         ----------
             stream
                 The stream to draw observations from.
-            
+
             classifier
                 The main classifier being monitored.
-            
+
             classifier_baseline
                 A secondary classifier to compare against.
-            
+
             total_n_frames: int
                 The total number of frames to run for. Should be set to -1 to run until the program is stopped.
-            
+
             updates_per_frame: int
                 How many data stream observations should be processed for each frame shown in the visualization.
-            
+
             interval: float
                 The time in seconds between visualization frames.
-        
+
         Returns
         ------
             animation: Animation
                 The matplotlib animation object.
-        
+
         Notes
         -----
         See examples/wind_sim_monitoring for examples of saving or viewing a monitoring visualization.
@@ -554,10 +559,10 @@ class Monitor:
                 text_obs,
                 False,
                 updates_per_frame,
-                pbar
+                pbar,
             ),
             interval=interval,
             blit=True,
-            frames=total_n_frames if total_n_frames > 0 else None
+            frames=total_n_frames if total_n_frames > 0 else None,
         )
         return ani

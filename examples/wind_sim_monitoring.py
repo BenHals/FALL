@@ -55,10 +55,12 @@ if __name__ == "__main__":
     monitor = Monitor(figsize=(12, 8))
     save = True
     if save:
-        ani = monitor.run_monitor(datastream, classifier, baseline, interval=1, updates_per_frame=1, total_n_frames=100)
-        f = r"animation.mp4" 
+        ani = monitor.run_monitor(
+            datastream, classifier, baseline, interval=1, updates_per_frame=1, total_n_frames=100
+        )
+        f = r"animation.mp4"
         # Requires FFMPEG to be installed separately.
-        writervideo = matplotlib.animation.FFMpegWriter(fps=60) 
+        writervideo = matplotlib.animation.FFMpegWriter(fps=60)
         ani.save(f, writer=writervideo)
     else:
         ani = monitor.run_monitor(datastream, classifier, baseline, interval=0.5, updates_per_frame=5)
