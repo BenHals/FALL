@@ -1,5 +1,7 @@
 from river.drift.adwin import ADWIN
 from river.tree.hoeffding_tree_classifier import HoeffdingTreeClassifier
+import matplotlib.pyplot as plt
+import matplotlib.animation
 
 from fall.adaptive_learning.base import BaseBufferedAdaptiveLearner
 from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
@@ -10,6 +12,7 @@ from fall.data.transition_patterns import circular_transition_pattern
 from fall.data.utils import Concept
 from fall.evaluation.monitoring import Monitor
 from fall.repository import AbsoluteValueComparer
+
 
 seed = 42
 s0 = WindSimGenerator(concept=3, sample_random_state_init=seed)
@@ -50,4 +53,13 @@ if __name__ == "__main__":
     print(datastream)
 
     monitor = Monitor(figsize=(12, 8))
-    monitor.run_monitor(datastream, classifier, baseline)
+    save = True
+    if save:
+        ani = monitor.run_monitor(datastream, classifier, baseline, interval=1, updates_per_frame=1, total_n_frames=100)
+        f = r"animation.mp4" 
+        # Requires FFMPEG to be installed separately.
+        writervideo = matplotlib.animation.FFMpegWriter(fps=60) 
+        ani.save(f, writer=writervideo)
+    else:
+        ani = monitor.run_monitor(datastream, classifier, baseline, interval=0.5, updates_per_frame=5)
+        plt.show()

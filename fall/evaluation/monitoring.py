@@ -1,7 +1,7 @@
 # pylint: disable=R0912,R0915
 import logging
 from collections import deque
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 import matplotlib
 import matplotlib.colors
@@ -10,11 +10,13 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from matplotlib import animation
+from matplotlib.animation import Animation
 from matplotlib.collections import LineCollection
 from matplotlib.image import AxesImage
 from river.base import Classifier
 from river.metrics import Accuracy, CohenKappa
 from river.utils import Rolling
+from tqdm.auto import tqdm
 
 from fall.adaptive_learning.base import BaseAdaptiveLearner, PerformanceMonitor
 from fall.data.datastream import ConceptSegmentDataStream
@@ -104,6 +106,7 @@ class Monitor:
         self.figsize = figsize
         self.history_len = 500
         self.count = 0
+        self.sample_count = 0
         self.ex = -1
         self.concept_colors = get_index_colors()
         self.merges: dict[int, int] = {}
@@ -159,105 +162,111 @@ class Monitor:
         likelihood_lc: Any,
         text_obs: Any,
         flush: bool = False,
+        updates_per_frame: int = 1,
+        pbar: Optional[tqdm] = None
     ) -> list[Any]:
-        X, y = next(stream_iter)
-        if X is not None:
-            self.ex += 1
-            p = classifier.predict_one(X)
-            if p is None:
-                p = 0
-            print(X, y, p)
-            try:
-                with np.errstate(all="ignore"):
-                    p_base = classifier_baseline.predict_one(X)
-            except Exception as e:  # pylint: disable=W0703
-                print(f"error {e}")
-                p_base = [0]
+        for update_frame in range(updates_per_frame):
+            X, y = next(stream_iter)
+            if X is not None:
+                self.ex += 1
+                p = classifier.predict_one(X)
+                if p is None:
+                    p = 0
+                try:
+                    with np.errstate(all="ignore"):
+                        p_base = classifier_baseline.predict_one(X)
+                except Exception as e:  # pylint: disable=W0703
+                    print(f"error {e}")
+                    p_base = [0]
 
-            perf_monitor: PerformanceMonitor = classifier.performance_monitor
+                perf_monitor: PerformanceMonitor = classifier.performance_monitor
 
-            self.adwin_likelihood_estimate = {}
-            self.adwin_likelihood_estimate.update(dict(perf_monitor.state_relevances.items()))
-            self.acc.update(p, y)
-            self.acc_baseline.update(p_base, y)
-            self.rolling_acc.update(p, y)
-            self.kappa.update(p, y)
-            self.x_history.append(self.ex)
-            self.acc_history.append(self.acc.get())
-            self.baseline_history.append(self.acc_baseline.get())
-            self.acc_c_history.append(self.rolling_acc.get())
+                self.adwin_likelihood_estimate = {}
+                self.adwin_likelihood_estimate.update(dict(perf_monitor.state_relevances.items()))
+                self.acc.update(p, y)
+                self.acc_baseline.update(p_base, y)
+                self.rolling_acc.update(p, y)
+                self.kappa.update(p, y)
+                self.x_history.append(self.ex)
+                self.acc_history.append(self.acc.get())
+                self.baseline_history.append(self.acc_baseline.get())
+                self.acc_c_history.append(self.rolling_acc.get())
 
-            # Update concept history
-            for concept_id, concept_estimate in self.adwin_likelihood_estimate.items():
-                concept_hist = self.likelihood_history.setdefault(concept_id, deque(maxlen=history_len))
-                concept_hist.append((self.ex, concept_estimate))
+                # Update concept history
+                for concept_id, concept_estimate in self.adwin_likelihood_estimate.items():
+                    concept_hist = self.likelihood_history.setdefault(concept_id, deque(maxlen=history_len))
+                    concept_hist.append((self.ex, concept_estimate))
 
-            # remove any deleted concepts
-            for concept_id in list(self.likelihood_history.keys()):
-                if concept_id not in self.adwin_likelihood_estimate:
-                    self.likelihood_history.pop(concept_id)
+                # remove any deleted concepts
+                for concept_id in list(self.likelihood_history.keys()):
+                    if concept_id not in self.adwin_likelihood_estimate:
+                        self.likelihood_history.pop(concept_id)
 
-            self.likelihood_segments = deque(maxlen=self.history_len)
-            self.likelihood_segment_colors = []
-            for concept_id, concept_hist in self.likelihood_history.items():
-                seg = []
-                for px, py in concept_hist:
-                    seg.append([px, py])
-                self.likelihood_segments.append(seg)
-                self.likelihood_segment_colors.append(self.concept_colors[(concept_id) % len(self.concept_colors)])
+                self.likelihood_segments = deque(maxlen=self.history_len)
+                self.likelihood_segment_colors = []
+                for concept_id, concept_hist in self.likelihood_history.items():
+                    seg = []
+                    for px, py in concept_hist:
+                        seg.append([px, py])
+                    self.likelihood_segments.append(seg)
+                    self.likelihood_segment_colors.append(self.concept_colors[(concept_id) % len(self.concept_colors)])
 
-            curr_gt_concept = self.stream.concept_segments[self.stream.seg_idx].concept_idx
-            curr_sys_concept = perf_monitor.initial_active_state_id
-            self.gt_history.append(curr_gt_concept)
-            self.sys_history.append(curr_sys_concept)
-            if curr_gt_concept not in self.concept_cm:
-                self.concept_cm[curr_gt_concept] = {}
-                self.gt_totals[curr_gt_concept] = 0
-            if curr_sys_concept not in self.concept_cm[curr_gt_concept]:
-                self.concept_cm[curr_gt_concept][curr_sys_concept] = 0
-            if curr_sys_concept not in self.sys_totals:
-                self.sys_totals[curr_sys_concept] = 0
-            self.concept_cm[curr_gt_concept][curr_sys_concept] += 1
-            self.gt_totals[curr_gt_concept] += 1
-            self.sys_totals[curr_sys_concept] += 1
+                curr_gt_concept = self.stream.concept_segments[self.stream.seg_idx].concept_idx
+                curr_sys_concept = perf_monitor.initial_active_state_id
+                self.gt_history.append(curr_gt_concept)
+                self.sys_history.append(curr_sys_concept)
+                if curr_gt_concept not in self.concept_cm:
+                    self.concept_cm[curr_gt_concept] = {}
+                    self.gt_totals[curr_gt_concept] = 0
+                if curr_sys_concept not in self.concept_cm[curr_gt_concept]:
+                    self.concept_cm[curr_gt_concept][curr_sys_concept] = 0
+                if curr_sys_concept not in self.sys_totals:
+                    self.sys_totals[curr_sys_concept] = 0
+                self.concept_cm[curr_gt_concept][curr_sys_concept] += 1
+                self.gt_totals[curr_gt_concept] += 1
+                self.sys_totals[curr_sys_concept] += 1
 
-            self.recall = self.concept_cm[curr_gt_concept][curr_sys_concept] / self.gt_totals[curr_gt_concept]
-            self.precision = self.concept_cm[curr_gt_concept][curr_sys_concept] / self.sys_totals[curr_sys_concept]
-            self.F1 = 2.0 * ((self.precision * self.recall) / (self.precision + self.recall))
+                self.recall = self.concept_cm[curr_gt_concept][curr_sys_concept] / self.gt_totals[curr_gt_concept]
+                self.precision = self.concept_cm[curr_gt_concept][curr_sys_concept] / self.sys_totals[curr_sys_concept]
+                self.F1 = 2.0 * ((self.precision * self.recall) / (self.precision + self.recall))
 
-            np_sys_history = np.array(self.sys_history)
-            self.merges.update(perf_monitor.merges if hasattr(classifier, "merges") else {})
-            self.deletions += perf_monitor.deletions if hasattr(classifier, "deletions") else []
-            sys_h, _, sys_repair = handle_merges_and_deletion(np_sys_history, self.merges, self.deletions)
+                np_sys_history = np.array(self.sys_history)
+                self.merges.update(perf_monitor.merges if hasattr(classifier, "merges") else {})
+                self.deletions += perf_monitor.deletions if hasattr(classifier, "deletions") else []
+                sys_h, _, sys_repair = handle_merges_and_deletion(np_sys_history, self.merges, self.deletions)
 
-            self.gt_seg_starts = segment_history(np.array(self.gt_history), self.ex)
-            self.gt_segments = deque(maxlen=self.history_len)
-            self.gt_colors = deque(maxlen=self.history_len)
-            seg_end = self.ex
-            for line in self.gt_seg_starts[::-1]:
-                self.gt_segments.append([[line[1], 0], [seg_end, 0]])
-                self.gt_colors.append(self.concept_colors[line[0] % len(self.concept_colors)])
-                seg_end = line[1]
+                self.gt_seg_starts = segment_history(np.array(self.gt_history), self.ex)
+                self.gt_segments = deque(maxlen=self.history_len)
+                self.gt_colors = deque(maxlen=self.history_len)
+                seg_end = self.ex
+                for line in self.gt_seg_starts[::-1]:
+                    self.gt_segments.append([[line[1], 0], [seg_end, 0]])
+                    self.gt_colors.append(self.concept_colors[line[0] % len(self.concept_colors)])
+                    seg_end = line[1]
 
-            self.sys_seg_starts = segment_history(sys_repair, self.ex)
-            self.sys_segments = deque(maxlen=self.history_len)
-            self.sys_colors = deque(maxlen=self.history_len)
-            seg_end = self.ex
-            for line in self.sys_seg_starts[::-1]:
-                self.sys_segments.append([[line[1], 0.75], [seg_end, 0.75]])
-                self.sys_colors.append(self.concept_colors[(line[0]) % len(self.concept_colors)])
-                seg_end = line[1]
+                self.sys_seg_starts = segment_history(sys_repair, self.ex)
+                self.sys_segments = deque(maxlen=self.history_len)
+                self.sys_colors = deque(maxlen=self.history_len)
+                seg_end = self.ex
+                for line in self.sys_seg_starts[::-1]:
+                    self.sys_segments.append([[line[1], 0.75], [seg_end, 0.75]])
+                    self.sys_colors.append(self.concept_colors[(line[0]) % len(self.concept_colors)])
+                    seg_end = line[1]
 
-            self.sys_nomr_seg_starts = segment_history(sys_h, self.ex)
+                self.sys_nomr_seg_starts = segment_history(sys_h, self.ex)
 
-            seg_end = self.ex
-            for line in self.sys_nomr_seg_starts[::-1]:
-                self.sys_nomr_segments.append([[line[1], 0.25], [seg_end, 0.25]])
-                self.sys_nomr_colors.append(self.concept_colors[(line[0]) % len(self.concept_colors)])
-                seg_end = line[1]
+                seg_end = self.ex
+                for line in self.sys_nomr_seg_starts[::-1]:
+                    self.sys_nomr_segments.append([[line[1], 0.25], [seg_end, 0.25]])
+                    self.sys_nomr_colors.append(self.concept_colors[(line[0]) % len(self.concept_colors)])
+                    seg_end = line[1]
 
-            classifier.learn_one(X, y)
-            classifier_baseline.learn_one(X, y)
+                classifier.learn_one(X, y)
+                classifier_baseline.learn_one(X, y)
+            self.sample_count += 1
+            if self.sample_count >= self.drift_count:
+                self.current_concept += 1
+                self.sample_count = 0
 
         z = self.stream.get_last_image()
         artists = []
@@ -353,14 +362,44 @@ class Monitor:
         ]
 
         self.count += 1
-        if self.count >= self.drift_count:
-            self.current_concept += 1
-            self.count = 0
+        if pbar is not None:
+            pbar.update()
         return artists
 
     def run_monitor(
-        self, stream: ConceptSegmentDataStream, classifier: BaseAdaptiveLearner, classifier_baseline: Classifier
-    ) -> None:
+        self, stream: ConceptSegmentDataStream, classifier: BaseAdaptiveLearner, classifier_baseline: Classifier, 
+        total_n_frames: int = -1, updates_per_frame: int = 5, interval: float = 1.0
+    ) -> Animation:
+        """
+        Parameters
+        ----------
+            stream
+                The stream to draw observations from.
+            
+            classifier
+                The main classifier being monitored.
+            
+            classifier_baseline
+                A secondary classifier to compare against.
+            
+            total_n_frames: int
+                The total number of frames to run for. Should be set to -1 to run until the program is stopped.
+            
+            updates_per_frame: int
+                How many data stream observations should be processed for each frame shown in the visualization.
+            
+            interval: float
+                The time in seconds between visualization frames.
+        
+        Returns
+        ------
+            animation: Animation
+                The matplotlib animation object.
+        
+        Notes
+        -----
+        See examples/wind_sim_monitoring for examples of saving or viewing a monitoring visualization.
+        """
 
         self.fig = plt.figure(figsize=self.figsize)
         self.gs = self.fig.add_gridspec(
@@ -494,7 +533,9 @@ class Monitor:
         self.gs.tight_layout(self.fig, rect=[0, 0, 1, 1], w_pad=0.05, h_pad=0.05)
         self.stream = stream
         stream_iter = iter(stream)
-        _ = animation.FuncAnimation(
+
+        pbar = tqdm(total=total_n_frames) if total_n_frames > 0 else None
+        ani = animation.FuncAnimation(
             self.fig,
             self.plot,
             fargs=(
@@ -512,8 +553,11 @@ class Monitor:
                 likelihood_lc,
                 text_obs,
                 False,
+                updates_per_frame,
+                pbar
             ),
-            interval=0.001,
+            interval=interval,
             blit=True,
+            frames=total_n_frames if total_n_frames > 0 else None
         )
-        plt.show()
+        return ani
