@@ -2,9 +2,31 @@ from typing import Counter, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
 from river.datasets.base import Dataset
-from river.utils.skmultiflow_utils import check_random_state
 
 from fall.data.utils import Concept, ConceptSegment
+
+
+def check_random_state(seed: Union[int, np.random.Generator, None]) -> np.random.Generator:
+    """Turn seed into a np.random.Generator instance.
+    Parameters
+    ----------
+    seed : None | int | instance of Generator
+        If seed is None, return the Generator singleton used by np.random.
+        If seed is an int, return a new Generator instance seeded with seed.
+        If seed is already a Generator instance, return it.
+        Otherwise raise ValueError.
+    Notes
+    -----
+    Code from sklearn.
+    This method is exclusive for cases where np.random is used.
+    """
+    if seed is None or seed is np.random:
+        return np.random.default_rng()
+    if isinstance(seed, int):
+        return np.random.default_rng(seed)
+    if isinstance(seed, np.random.Generator):
+        return seed
+    raise ValueError(f"{seed} cannot be used to seed a numpy.random.Generator instance")
 
 
 def make_stream_concepts(
@@ -107,7 +129,7 @@ class ConceptSegmentDataStream(Dataset):
         self,
         concept_segments: List[ConceptSegment],
         drifts: Union[int, List[int]],
-        seed: Union[int, np.random.RandomState, None] = None,
+        seed: Union[int, np.random.Generator, None] = None,
     ) -> None:
         self.concept_segments = concept_segments
         if len(concept_segments) <= 1:
@@ -124,13 +146,13 @@ class ConceptSegmentDataStream(Dataset):
 
         # Check consistancy
         first_stream = concept_segments[0].concept.data
-        n_classes = first_stream.n_classes
+        n_classes: int = first_stream.n_classes  # type: ignore # River variable not typed correctly
         for seg in concept_segments[1:]:
             if seg.concept.data.n_features != first_stream.n_features:
                 raise AttributeError("Inconsistent n_features.")
             if seg.concept.data.n_outputs != first_stream.n_outputs:
                 raise AttributeError("Inconsistent n_features.")
-            n_classes = max(n_classes, seg.concept.data.n_classes)
+            n_classes = max(n_classes, seg.concept.data.n_classes)  # type: ignore # River variable not typed correctly
 
         super().__init__(
             n_features=first_stream.n_features,
@@ -171,7 +193,7 @@ class ConceptSegmentDataStream(Dataset):
                 probability = 1.0 / (1.0 + np.exp(v))
                 # This is the probability of the second (current) concept
                 # so chance of rolling above is the probability of previous segment.
-                if rng.rand() > probability:
+                if rng.random() > probability:
                     observation_seg_idx -= 1
 
                 # Don't need to check after the width.
@@ -184,7 +206,7 @@ class ConceptSegmentDataStream(Dataset):
                 probability = 1.0 / (1.0 + np.exp(v))
                 # This is the probability of the second (next) concept
                 # so chance of rolling below is the probability of the next segment.
-                if rng.rand() <= probability:
+                if rng.random() <= probability:
                     observation_seg_idx += 1
 
             observation_seg = self.concept_segments[observation_seg_idx]
