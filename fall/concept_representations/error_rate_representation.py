@@ -36,11 +36,11 @@ class ErrorRateRepresentation(ConceptRepresentation):
             self.supervised_window.append((new_sup_ob, new_is_correct))
 
         self.last_supervised_update = self.supervised_timestep
-    
+
     def extract_fingerprint(self) -> list[float]:
         avg_error_rate = self.window_error_rate.get()
         return [avg_error_rate]
-    
+
     def integrate_fingerprint(self, fingerprint: list[float]) -> list[float]:
         avg_error_rate = fingerprint[0]
         self.meta_feature_distributions[0].learn_one(avg_error_rate)

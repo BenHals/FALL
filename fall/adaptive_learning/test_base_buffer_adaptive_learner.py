@@ -482,7 +482,7 @@ def test_base_predictions_increase_rate() -> None:
     dataset_2 = synth.STAGGER(classification_function=2, seed=0)
     t = -1
     for dataset in [dataset_0, dataset_1, dataset_2] * 3:
-        for i, (x, y) in enumerate(dataset.take(500)):
+        for _, (x, y) in enumerate(dataset.take(500)):
             t += 1
             p_baseline = base_classifier.predict_one(x, t)
             p_buffered = buffered_classifier.predict_one(x, t)
@@ -509,7 +509,7 @@ def test_representations() -> None:
     dataset_2 = synth.STAGGER(classification_function=2, seed=0)
     t = -1
     for dataset in [dataset_0, dataset_1, dataset_2] * 3:
-        for i, (x, y) in enumerate(dataset.take(500)):
+        for _, (x, y) in enumerate(dataset.take(500)):
             t += 1
             _ = buffered_classifier.predict_one(x, t)
             buffered_classifier.learn_one(x, y, timestep=t)

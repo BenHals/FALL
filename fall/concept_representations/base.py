@@ -38,7 +38,7 @@ class ConceptRepresentation(Base, abc.ABC):
         update_period: int
             Default: 1
             The number of steps between updating meta_feature_values based on self.window
-        
+
         update_on_supervised: bool
             Default: True
             Whether or not to update the concept representation based on supervised updates
