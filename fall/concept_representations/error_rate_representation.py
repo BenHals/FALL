@@ -22,8 +22,6 @@ class ErrorRateRepresentation(ConceptRepresentation):
         self.meta_feature_distributions = [GaussianDistribution(memory_size=1 if mode == "active" else -1)]
 
     def update_supervised(self) -> None:
-        if self.supervised_timestep - self.last_supervised_update < self.update_period:
-            return
         while self.new_supervised:
             new_sup_ob = self.new_supervised.popleft()
             new_is_correct = new_sup_ob.predictions[self.concept_id] == new_sup_ob.y
@@ -32,16 +30,23 @@ class ErrorRateRepresentation(ConceptRepresentation):
                 _, discard_is_correct = self.supervised_window[0]
                 self.window_error_rate.revert(0 if discard_is_correct else 1)
 
-            # We need to same the correctness from when the observation was added
+            # We need to store the correctness from when the observation was added
             # Because if a prediction changes we may revert a different value than
             # was added, permanantly biasing the mean.
             self.supervised_window.append((new_sup_ob, new_is_correct))
 
+        self.last_supervised_update = self.supervised_timestep
+    
+    def extract_fingerprint(self) -> list[float]:
         avg_error_rate = self.window_error_rate.get()
+        return [avg_error_rate]
+    
+    def integrate_fingerprint(self, fingerprint: list[float]) -> list[float]:
+        avg_error_rate = fingerprint[0]
         self.meta_feature_distributions[0].learn_one(avg_error_rate)
         self.meta_feature_values[0] = self.meta_feature_distributions[0].mean
 
-        self.last_supervised_update = self.supervised_timestep
+        return self.meta_feature_values
 
     def update_unsupervised(self) -> None:
         pass

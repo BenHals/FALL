@@ -38,11 +38,22 @@ class ConceptRepresentation(Base, abc.ABC):
         update_period: int
             Default: 1
             The number of steps between updating meta_feature_values based on self.window
+        
+        update_on_supervised: bool
+            Default: True
+            Whether or not to update the concept representation based on supervised updates
+
+        update_on_unsupervised: bool
+            Default: True
+            Whether or not to update the concept representation based on unsupervised updates
         """
         self.window_size: int = window_size
         self.concept_id = concept_id
         self.mode: str = mode
         self.update_period: int = update_period
+        self.update_on_supervised: bool = True
+        self.update_on_unsupervised: bool = False
+
         self.updates_per_window = window_size // update_period
 
         self.supervised_window: Deque[Tuple[Observation, bool]] = deque(maxlen=self.window_size)
@@ -53,7 +64,9 @@ class ConceptRepresentation(Base, abc.ABC):
         self.supervised_timestep = -1.0
         self.unsupervised_timestep = -1.0
         self.last_supervised_update = -1.0
-        self.last_supervised_update = -1.0
+        self.last_unsupervised_update = -1.0
+        self.last_supervised_concept_update = -1.0
+        self.last_unsupervised_concept_update = -1.0
 
         # A concept representation represents a concept as a finite set of values, or meta-features
         self.meta_feature_values: List[float] = []
@@ -68,6 +81,14 @@ class ConceptRepresentation(Base, abc.ABC):
         self.supervised_timestep = supervised_observation.seen_at
         self.update_supervised()
 
+        # If required, extract a fingerprint and use it to update the concept
+        if self.update_on_supervised:
+            if self.last_supervised_update >= self.last_supervised_concept_update + self.update_period:
+                current_fingerprint = self.extract_fingerprint()
+                print(current_fingerprint, not current_fingerprint[0])
+                self.integrate_fingerprint(current_fingerprint)
+                self.last_supervised_concept_update = self.last_supervised_update
+
     def predict_one(self, unsupervised_observation: Observation) -> None:
         """Update a concept representation with a single observation drawn from a concept,
         classified by a given classifier. Updates unsupervised meta-features, as in river."""
@@ -75,13 +96,34 @@ class ConceptRepresentation(Base, abc.ABC):
         self.unsupervised_timestep = unsupervised_observation.seen_at
         self.update_unsupervised()
 
+        # If required, extract a fingerprint and use it to update the concept
+        if self.update_on_unsupervised:
+            if self.last_unsupervised_update >= self.last_unsupervised_concept_update + self.update_period:
+                current_fingerprint = self.extract_fingerprint()
+                self.integrate_fingerprint(current_fingerprint)
+                self.last_unsupervised_concept_update = self.last_unsupervised_update
+
     @abc.abstractmethod
     def update_supervised(self) -> None:
-        """Update supervised meta-features."""
+        """Update supervised meta-features in an online manner.
+        The idea is that we can cheaply maintain a record of meta-features across the window
+        in a streaming way, so that extracting a fingerprint is cheap when needed."""
 
     @abc.abstractmethod
     def update_unsupervised(self) -> None:
-        """Update unsupervised meta-features."""
+        """Update unsupervised meta-features.
+        The idea is that we can cheaply maintain a record of meta-features across the window
+        in a streaming way, so that extracting a fingerprint is cheap when needed."""
+
+    @abc.abstractmethod
+    def extract_fingerprint(self) -> list[float]:
+        """Extracts a representation of the current observations in the window.
+        Returns the representation of the current window."""
+
+    @abc.abstractmethod
+    def integrate_fingerprint(self, fingerprint: list[float]) -> list[float]:
+        """Integrates a current fingerprint into the current concept representation.
+        Returns the current representation of the concept after integration."""
 
     @abc.abstractmethod
     def get_values(self) -> List:
