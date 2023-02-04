@@ -8,8 +8,8 @@ from river.base import Base
 from scipy.spatial.distance import cosine
 
 from fall.concept_representations import ConceptRepresentation, MetaFeatureNormalizer
+from fall.metafeature_weighting.weighting_functions import uniform_weighting
 from fall.repository import Repository
-from fall.repository.metafeature_weighting.weighting_functions import uniform_weighting
 from fall.states import State
 
 

@@ -13,10 +13,10 @@ from fall.data.synthetic.wind_sim import WindSimGenerator
 from fall.data.transition_patterns import circular_transition_pattern
 from fall.data.utils import Concept
 from fall.evaluation.monitoring import Monitor
-from fall.repository import CosineComparer  # AbsoluteValueComparer,
-from fall.repository.metafeature_weighting.weighting_functions import (  # random_weighting,
+from fall.metafeature_weighting.weighting_functions import (  # random_weighting,
     fisher_overall_weighting,
 )
+from fall.repository import CosineComparer  # AbsoluteValueComparer,
 
 seed = 42
 s0 = WindSimGenerator(concept=3, sample_random_state_init=seed)
