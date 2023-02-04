@@ -79,7 +79,7 @@ def plot_tm(
     active_state_id: int,
     T: TransitionFSM,
     repository: dict[int, Any],
-    concept_colors: list[str],
+    concept_colors: list[tuple[float, float, float, float]],
     c_init: int,
 ) -> None:
     G = nx.DiGraph()
@@ -165,7 +165,7 @@ class Monitor:
         updates_per_frame: int = 1,
         pbar: Optional[tqdm] = None,
     ) -> list[Any]:
-        for update_frame in range(updates_per_frame):
+        for _ in range(updates_per_frame):
             X, y = next(stream_iter)
             if X is not None:
                 self.ex += 1
