@@ -39,4 +39,4 @@ jobs:
     - name: tests
       run: |
        pip install .[tests]
-       pytest
+       python -m pytest --import-mode=append .
