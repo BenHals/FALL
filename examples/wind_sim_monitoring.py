@@ -45,7 +45,7 @@ classifier = BaseBufferedAdaptiveLearner(
     prediction_mode="all",
     # representation_comparer=AbsoluteValueComparer(),
     representation_comparer=CosineComparer(fisher_overall_weighting),
-    drift_detector_constructor=lambda: ADWIN(delta=0.0002),
+    drift_detector_constructor=lambda: ADWIN(delta=0.001),
     representation_window_size=50,
     representation_update_period=1,
     reidentification_check_schedulers=[DriftDetectionCheck(100)],
