@@ -55,6 +55,8 @@ class PerformanceMonitor:
         self.current_active_state_segment = StateSegment(0, -1, 1, initial_active_state_id)
         self.active_state_history: list[StateSegment] = [self.current_active_state_segment]
 
+        self.active_state_evolved = False
+
     def step_reset(self, initial_active_state: State) -> None:
         """Reset monitoring on taking a new step."""
         self.set_initial_active_state(initial_active_state)
@@ -368,6 +370,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         for state in trainable_states:
             state.learn_one(supervised_observation)
         self.performance_monitor.last_trained_observation = supervised_observation
+        self.performance_monitor.active_state_evolved = self.get_active_state().evolved_at_last_update
 
         self.step(supervised_observation)
 
@@ -876,6 +879,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             for state in trained_states:
                 state.learn_one(stable_observation)
             self.performance_monitor.last_trained_observation = stable_observation
+            self.performance_monitor.active_state_evolved = self.get_active_state().evolved_at_last_update
 
         self.step(supervised_observation)
 

@@ -5,6 +5,7 @@ from river.tree.hoeffding_tree_classifier import HoeffdingTreeClassifier
 
 from fall.adaptive_learning.base import BaseBufferedAdaptiveLearner
 from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
+from fall.classifiers import EvolutionHoeffdingTree
 from fall.concept_representations import (  # ErrorRateRepresentation,
     FingerprintRepresentation,
 )
@@ -37,7 +38,7 @@ concept_segments = make_stream_concepts([c0, c1, c2, c3], pattern, segment_lengt
 datastream = ConceptSegmentDataStream(concept_segments, 0, seed)
 
 classifier = BaseBufferedAdaptiveLearner(
-    classifier_constructor=lambda: HoeffdingTreeClassifier(grace_period=50),
+    classifier_constructor=lambda: EvolutionHoeffdingTree(grace_period=25),
     # representation_constructor=ErrorRateRepresentation,
     representation_constructor=FingerprintRepresentation,
     train_representation=True,

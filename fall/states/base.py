@@ -41,6 +41,9 @@ class State:  # pylint: disable=too-few-public-methods
         self.weight_since_last_active = 0.0
         self.last_trained_active_timestep = -1.0
 
+        self.evolved_at_last_update = False
+        self.weight_since_last_evolution = 0.0
+
         # We store a record of this states accuracy while active
         # (i.e., on observations with an active_state_id set to this states id)
         # We can use ADWIN for this, to keep the most recent window of
@@ -97,6 +100,7 @@ class State:  # pylint: disable=too-few-public-methods
 
         # Some classifiers cannot take sample_weight.
         # Try/except to avoid branching
+        prior_evolution = self.get_current_evolution()
         try:
             self.classifier.learn_one(
                 x=supervised_observation.x,
@@ -105,6 +109,11 @@ class State:  # pylint: disable=too-few-public-methods
             )
         except TypeError:
             self.classifier.learn_one(x=supervised_observation.x, y=supervised_observation.y)
+        post_evolution = self.get_current_evolution()
+        self.evolved_at_last_update = False
+        if post_evolution != prior_evolution:
+            self.evolved_at_last_update = True
+            self.weight_since_last_evolution = 0.0
 
         is_correct = supervised_observation.y == supervised_observation.predictions[self.state_id]
         self.in_concept_accuracy_record.update(int(is_correct))  # type: ignore
@@ -145,12 +154,20 @@ class State:  # pylint: disable=too-few-public-methods
             representation.predict_one(unsupervised_observation)
         return p
 
+    def get_current_evolution(self) -> int:
+        """Get the current evolution id of the classifier.
+        Returns 0 if the classifier does not track evolutions."""
+        if not hasattr(self.classifier, "evolutions"):
+            return 0
+        return self.classifier.evolutions
+
     def step(self, sample_weight: float = 1.0, is_active: bool = True) -> None:
         """Step states tracking statistics"""
         self.seen_weight += sample_weight
         self.weight_since_last_active += sample_weight
         if is_active:
             self.active_seen_weight += sample_weight
+            self.weight_since_last_evolution += sample_weight
             self.weight_since_last_active = 0
 
     def add_active_state_relevance(self, active_state_relevance: float) -> None:
