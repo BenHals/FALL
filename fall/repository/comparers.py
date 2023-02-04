@@ -80,8 +80,8 @@ class CosineComparer(RepresentationComparer):
         vec_a = np.array(rep_a.overall_normalize(rep_a.meta_feature_values))
         vec_b = np.array(rep_b.overall_normalize(rep_b.meta_feature_values))
         weights = np.array(self.weights)
-        print(vec_a, vec_b, self.get_cosine_distance(vec_a, vec_b, weights))
-        return 1 - self.get_cosine_distance(vec_a, vec_b, weights)
+        print(vec_a, vec_b, get_cosine_distance(vec_a, vec_b, weights))
+        return 1 - get_cosine_distance(vec_a, vec_b, weights)
 
 
 def get_cosine_distance(vec_a: np.ndarray, vec_b: np.ndarray, weights: np.ndarray) -> float:
