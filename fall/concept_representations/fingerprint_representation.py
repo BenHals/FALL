@@ -40,8 +40,6 @@ class FingerprintRepresentation(ConceptRepresentation):
 
         self.target_map: dict[ClfTarget, float] = {}
 
-        self.initialized = False
-
     def initialize(self, observation: Observation) -> None:
         """Initialize with information specific to the observation schema.
         We do this when we first encounter an observation.

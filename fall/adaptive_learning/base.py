@@ -417,6 +417,17 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.performance_monitor.active_state_last_relevance = active_state_relevance
         self.performance_monitor.state_relevances[active_state.state_id] = active_state.get_in_concept_relevance()
 
+        # if self.construct_pair_representations:
+        #     for state_id, state in self.repository.states.items():
+        #         if state_id == active_state.state_id:
+        #             continue
+        # active_representation = self.active_window_state_representations.get(
+        #     state_id, self.construct_active_representation(state)
+        # )
+        # self.performance_monitor.state_relevances[state_id] = self.representation_comparer.get_state_rep_similarity(
+        #     state, active_representation
+        # )
+
         # Check if we need to perform reidentification
         # either from a scheduled check for from a drift detection.
         step_reidentification_checks: List[DriftInfo] = []
@@ -562,7 +573,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
                     continue
                 supervised_timesteps.add(observation.seen_at)
                 with pure_inference_mode():
-                    _ = state.predict_one(observation)
+                    if state.state_id not in observation.predictions:
+                        _ = state.predict_one(observation)
                     representation.predict_one(observation)
                 representation.learn_one(observation)
 

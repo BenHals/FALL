@@ -98,7 +98,8 @@ def get_cosine_distance(vec_a: np.ndarray, vec_b: np.ndarray, weights: np.ndarra
     """Get the weighted cosine distance between two vectors.
     Internally normalizes weights.
     """
-    normed_weights = (weights) / (np.max(weights))
+    # normed_weights = (weights) / (np.max(weights))
+    normed_weights = (weights) / (np.sum(weights))
     try:
         c = cosine(vec_a, vec_b, w=normed_weights)
     except ZeroDivisionError:

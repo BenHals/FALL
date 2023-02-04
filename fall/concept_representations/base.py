@@ -181,3 +181,11 @@ class ConceptRepresentation(Base, abc.ABC):
         """The format in which distributional information is stored
         Determines which feature selection methods may be used."""
         return DistributionTypes(0)
+
+    @property
+    def counts(self) -> list[int]:
+        return [d.count for d in self.meta_feature_distributions]
+
+    @property
+    def stdevs(self) -> list[float]:
+        return [d.stdev for d in self.meta_feature_distributions]
