@@ -3,6 +3,7 @@ from numpy.testing import assert_array_almost_equal
 
 from fall.concept_representations.error_rate_representation import (
     ErrorRateRepresentation,
+    MetaFeatureNormalizer,
 )
 from fall.repository.comparers import AbsoluteValueComparer
 from fall.utils import Observation
@@ -14,11 +15,12 @@ def test_absolute_value_comparer() -> None:
     # It is common to assume a baseline error rate of 1.0
     # This is the default.
     concept_id = 0
-    baseline = ErrorRateRepresentation(1, concept_id)
+    normalizer = MetaFeatureNormalizer()
+    baseline = ErrorRateRepresentation(1, concept_id, normalizer)
     y_vals = [0, 0, 1, 0, 1, 1, 1, 0]
     p_vals = [1, 0, 1, 0, 1, 0, 0, 1]
-    rep_1 = ErrorRateRepresentation(1, concept_id)
-    rep_5 = ErrorRateRepresentation(5, concept_id)
+    rep_1 = ErrorRateRepresentation(1, concept_id, normalizer)
+    rep_5 = ErrorRateRepresentation(5, concept_id, normalizer)
     sim = AbsoluteValueComparer()
     rep_1_similarity = []
     rep_5_similarity = []

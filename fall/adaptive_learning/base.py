@@ -18,7 +18,7 @@ from fall.adaptive_learning.reidentification_schedulers import (
     DriftType,
     ReidentificationSchedule,
 )
-from fall.concept_representations import ConceptRepresentation
+from fall.concept_representations import ConceptRepresentation, MetaFeatureNormalizer
 from fall.data.utils import StateSegment
 from fall.repository import (
     Repository,
@@ -124,7 +124,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def __init__(
         self,
         classifier_constructor: Callable[[], Classifier],
-        representation_constructor: Callable[[int, int, str, int], ConceptRepresentation],
+        representation_constructor: Callable[[int, int, MetaFeatureNormalizer, str, int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,
@@ -217,11 +217,13 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.max_size = max_size
         self.valuation_policy = valuation_policy
         self.classifier_constructor = classifier_constructor
+        # The normalizer captures the observed distribution of meta-features.
+        self.normalizer = MetaFeatureNormalizer()
         self.active_representation_constructor = lambda state_id: representation_constructor(
-            representation_window_size, state_id, "active", representation_update_period
+            representation_window_size, state_id, self.normalizer, "active", representation_update_period
         )
         self.concept_representation_constructor = lambda state_id: representation_constructor(
-            representation_window_size, state_id, "concept", representation_update_period
+            representation_window_size, state_id, self.normalizer, "concept", representation_update_period
         )
         self.representation_comparer = representation_comparer
         self.drift_detector_constructor = drift_detector_constructor
@@ -687,7 +689,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
     def __init__(
         self,
         classifier_constructor: Callable[[], Classifier],
-        representation_constructor: Callable[[int, int, str, int], ConceptRepresentation],
+        representation_constructor: Callable[[int, int, MetaFeatureNormalizer, str, int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,

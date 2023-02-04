@@ -9,12 +9,20 @@ from river.base import Base
 from fall.utils import Observation
 
 from .meta_feature_distributions import BaseDistribution, DistributionTypes
+from .normalizer import MetaFeatureNormalizer
 
 
 class ConceptRepresentation(Base, abc.ABC):
     """A base concept representation."""
 
-    def __init__(self, window_size: int, concept_id: int, mode: str = "active", update_period: int = 1) -> None:
+    def __init__(
+        self,
+        window_size: int,
+        concept_id: int,
+        normalizer: MetaFeatureNormalizer,
+        mode: str = "active",
+        update_period: int = 1,
+    ) -> None:
         """
         Parameters
         ----------
@@ -49,6 +57,7 @@ class ConceptRepresentation(Base, abc.ABC):
         """
         self.window_size: int = window_size
         self.concept_id = concept_id
+        self.normalizer = normalizer
         self.mode: str = mode
         self.update_period: int = update_period
         self.update_on_supervised: bool = True
@@ -85,7 +94,7 @@ class ConceptRepresentation(Base, abc.ABC):
         if self.update_on_supervised:
             if self.last_supervised_update >= self.last_supervised_concept_update + self.update_period:
                 current_fingerprint = self.extract_fingerprint()
-                print(current_fingerprint, not current_fingerprint[0])
+                self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)
                 self.last_supervised_concept_update = self.last_supervised_update
 
@@ -100,8 +109,33 @@ class ConceptRepresentation(Base, abc.ABC):
         if self.update_on_unsupervised:
             if self.last_unsupervised_update >= self.last_unsupervised_concept_update + self.update_period:
                 current_fingerprint = self.extract_fingerprint()
+                self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)
                 self.last_unsupervised_concept_update = self.last_unsupervised_update
+
+    def overall_normalize(self, meta_features: list[float]) -> list[float]:
+        """Min max normalize using the global distribution."""
+        return self.normalizer.min_max_normalize(meta_features)
+
+    def overall_standardize(self, meta_features: list[float]) -> list[float]:
+        """Standardize using the global distribution."""
+        return self.normalizer.standardize(meta_features)
+
+    def local_normalize(self, meta_features: list[float]) -> list[float]:
+        """Min max normalize using the local distribution."""
+        transformed_meta_features = []
+        for i, mf in enumerate(meta_features):
+            transformed_meta_features.append(self.meta_feature_distributions[i].min_max_normalize(mf))
+
+        return transformed_meta_features
+
+    def local_standardize(self, meta_features: list[float]) -> list[float]:
+        """Standardize using the local distribution."""
+        transformed_meta_features = []
+        for i, mf in enumerate(meta_features):
+            transformed_meta_features.append(self.meta_feature_distributions[i].standardize(mf))
+
+        return transformed_meta_features
 
     @abc.abstractmethod
     def update_supervised(self) -> None:

@@ -9,7 +9,7 @@ from fall.adaptive_learning import (
     BaseBufferedAdaptiveLearner,
     get_increasing_buffer_scheduler,
 )
-from fall.concept_representations import ConceptRepresentation
+from fall.concept_representations import ConceptRepresentation, MetaFeatureNormalizer
 from fall.repository import RepresentationComparer, ValuationPolicy
 from fall.states import State
 from fall.utils import Observation
@@ -25,7 +25,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
     def __init__(
         self,
         classifier_constructor: Callable[[], Classifier],
-        representation_constructor: Callable[[int, int, str, int], ConceptRepresentation],
+        representation_constructor: Callable[[int, int, MetaFeatureNormalizer, str, int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,
@@ -97,7 +97,7 @@ class BufferedDiscreteSegmentAL(BaseBufferedAdaptiveLearner):
     def __init__(
         self,
         classifier_constructor: Callable[[], Classifier],
-        representation_constructor: Callable[[int, int, str, int], ConceptRepresentation],
+        representation_constructor: Callable[[int, int, MetaFeatureNormalizer, str, int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,

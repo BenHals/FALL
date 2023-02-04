@@ -3,6 +3,7 @@ import numpy as np
 
 from fall.concept_representations.error_rate_representation import (
     ErrorRateRepresentation,
+    MetaFeatureNormalizer,
 )
 from fall.utils import Observation
 
@@ -18,9 +19,10 @@ def test_error_rate_representation() -> None:
     y_vals = [0, 0, 1, 0, 1, 1, 1, 0]
     p_vals = [1, 0, 1, 0, 1, 0, 0, 1]
     concept_id = 0
-    rep_1 = ErrorRateRepresentation(1, concept_id)
+    normalizer = MetaFeatureNormalizer()
+    rep_1 = ErrorRateRepresentation(1, concept_id, normalizer)
     rep_1_vals = []
-    rep_5 = ErrorRateRepresentation(5, concept_id, mode="active")
+    rep_5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="active")
     rep_5_vals = []
     for t, (y, p) in enumerate(zip(y_vals, p_vals)):
         ob = Observation(x={}, y=y, seen_at=t, active_state_id=concept_id)
@@ -44,13 +46,14 @@ def test_error_rate_representation_concept() -> None:
     y_vals = [0, 0, 1, 0, 1, 1, 1, 0]
     p_vals = [1, 0, 1, 0, 1, 0, 0, 1]
     concept_id = 0
-    rep_1 = ErrorRateRepresentation(1, concept_id, mode="active")
+    normalizer = MetaFeatureNormalizer()
+    rep_1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="active")
     rep_1_vals = []
-    rep_5 = ErrorRateRepresentation(5, concept_id, mode="active")
+    rep_5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="active")
     rep_5_vals = []
-    rep_c1 = ErrorRateRepresentation(1, concept_id, mode="concept")
+    rep_c1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="concept")
     rep_c1_vals = []
-    rep_c5 = ErrorRateRepresentation(5, concept_id, mode="concept")
+    rep_c5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="concept")
     rep_c5_vals = []
     for t, (y, p) in enumerate(zip(y_vals, p_vals)):
         ob = Observation(x={}, y=y, seen_at=t, active_state_id=concept_id)
@@ -101,13 +104,14 @@ def test_error_rate_representation_update_period() -> None:
     p_vals = [1, 0, 1, 0, 1, 0, 0, 1]
     concept_id = 0
     update_period = 3
-    rep_1 = ErrorRateRepresentation(1, concept_id, mode="active", update_period=update_period)
+    normalizer = MetaFeatureNormalizer()
+    rep_1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="active", update_period=update_period)
     rep_1_vals = []
-    rep_5 = ErrorRateRepresentation(5, concept_id, mode="active", update_period=update_period)
+    rep_5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="active", update_period=update_period)
     rep_5_vals = []
-    rep_c1 = ErrorRateRepresentation(1, concept_id, mode="concept", update_period=update_period)
+    rep_c1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="concept", update_period=update_period)
     rep_c1_vals = []
-    rep_c5 = ErrorRateRepresentation(5, concept_id, mode="concept", update_period=update_period)
+    rep_c5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="concept", update_period=update_period)
     rep_c5_vals = []
     for t, (y, p) in enumerate(zip(y_vals, p_vals)):
         ob = Observation(x={}, y=y, seen_at=t, active_state_id=concept_id)

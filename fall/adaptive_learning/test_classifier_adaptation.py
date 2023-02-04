@@ -5,16 +5,18 @@ from fall.adaptive_learning.classifier_adaptation import (
     max_acc_sig_relevance_adaptation,
     maximum_relevance_adaptation,
 )
-from fall.concept_representations import ErrorRateRepresentation
+from fall.concept_representations import ErrorRateRepresentation, MetaFeatureNormalizer
 from fall.repository import Repository
 from fall.states import State
 
 
 def test_maximum_relevance() -> None:
     """This strategy should return the state from R u B with maximum relevance."""
-    bg = State(GaussianNB(), lambda x: ErrorRateRepresentation(1, x))
+    normalizer = MetaFeatureNormalizer()
+    bg = State(GaussianNB(), lambda x: ErrorRateRepresentation(1, x, normalizer))
     repo = Repository(
-        classifier_constructor=GaussianNB, representation_constructor=lambda x: ErrorRateRepresentation(1, x)
+        classifier_constructor=GaussianNB,
+        representation_constructor=lambda x: ErrorRateRepresentation(1, x, normalizer),
     )
     s1 = repo.add_next_state()
     s2 = repo.add_next_state()
@@ -48,9 +50,11 @@ def test_maximum_relevance() -> None:
 
 def test_max_acc_sig_relevance() -> None:
     """This strategy should return the state from R u B with maximum accuracy from those with maximum relevance."""
-    bg = State(GaussianNB(), lambda x: ErrorRateRepresentation(1, x))
+    normalizer = MetaFeatureNormalizer()
+    bg = State(GaussianNB(), lambda x: ErrorRateRepresentation(1, x, normalizer))
     repo = Repository(
-        classifier_constructor=GaussianNB, representation_constructor=lambda x: ErrorRateRepresentation(1, x)
+        classifier_constructor=GaussianNB,
+        representation_constructor=lambda x: ErrorRateRepresentation(1, x, normalizer),
     )
     s1 = repo.add_next_state()
     s2 = repo.add_next_state()

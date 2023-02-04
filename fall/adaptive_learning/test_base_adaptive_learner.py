@@ -11,7 +11,7 @@ from fall.adaptive_learning.reidentification_schedulers import (
     DriftType,
     PeriodicCheck,
 )
-from fall.concept_representations import ErrorRateRepresentation
+from fall.concept_representations import ErrorRateRepresentation, MetaFeatureNormalizer
 from fall.repository import AbsoluteValueComparer
 from fall.states import State
 from fall.utils import Observation
@@ -108,13 +108,14 @@ def test_base_predictions() -> None:
         background_state_mode="drift_reset",
     )
 
+    normalizer = MetaFeatureNormalizer()
     baseline_state = State(
         HoeffdingTreeClassifier(),
-        lambda state_id: ErrorRateRepresentation(al_classifier.representation_window_size, state_id),
+        lambda state_id: ErrorRateRepresentation(al_classifier.representation_window_size, state_id, normalizer),
         state_id=-1,
     )
     baseline_active_representation = ErrorRateRepresentation(
-        al_classifier.representation_window_size, baseline_state.state_id
+        al_classifier.representation_window_size, baseline_state.state_id, normalizer
     )
     baseline_comparer = AbsoluteValueComparer()
     baseline_detector = ADWIN()
@@ -152,14 +153,16 @@ def test_drift_detection() -> None:
         drift_detector_constructor=ADWIN,
         background_state_mode="drift_reset",
     )
-
+    normalizer = MetaFeatureNormalizer()
     baseline_state = State(
         HoeffdingTreeClassifier(),
-        lambda state_id: ErrorRateRepresentation(al_classifier.representation_window_size, state_id, mode="concept"),
+        lambda state_id: ErrorRateRepresentation(
+            al_classifier.representation_window_size, state_id, normalizer, mode="concept"
+        ),
         state_id=-1,
     )
     baseline_active_representation = ErrorRateRepresentation(
-        al_classifier.representation_window_size, baseline_state.state_id
+        al_classifier.representation_window_size, baseline_state.state_id, normalizer
     )
     baseline_comparer = AbsoluteValueComparer()
     baseline_detector = ADWIN()
@@ -267,14 +270,18 @@ def test_drift_transition() -> None:
         drift_detector_constructor=ADWIN,
         background_state_mode="drift_reset",
     )
-
+    normalizer = MetaFeatureNormalizer()
     baseline_c1_state = State(
         HoeffdingTreeClassifier(),
-        lambda state_id: ErrorRateRepresentation(al_classifier.representation_window_size, state_id, mode="concept"),
+        lambda state_id: ErrorRateRepresentation(
+            al_classifier.representation_window_size, state_id, normalizer, mode="concept"
+        ),
         state_id=-1,
     )
     baseline_c1_active_representation = ErrorRateRepresentation(
-        al_classifier.representation_window_size, baseline_c1_state.state_id
+        al_classifier.representation_window_size,
+        baseline_c1_state.state_id,
+        normalizer,
     )
     baseline_c1_comparer = AbsoluteValueComparer()
     baseline_c1_detector = ADWIN()
@@ -336,14 +343,17 @@ def test_drift_transition() -> None:
     assert al_classifier.active_state_id == 1
     assert drift_point
 
+    normalizer = MetaFeatureNormalizer()
     # Test that after the transition, we are properly using the new state not the old state.
     baseline_c2_state = State(
         HoeffdingTreeClassifier(),
-        lambda state_id: ErrorRateRepresentation(al_classifier.representation_window_size, state_id, mode="concept"),
+        lambda state_id: ErrorRateRepresentation(
+            al_classifier.representation_window_size, state_id, normalizer, mode="concept"
+        ),
         state_id=-2,
     )
     baseline_c2_active_representation = ErrorRateRepresentation(
-        al_classifier.representation_window_size, baseline_c2_state.state_id
+        al_classifier.representation_window_size, baseline_c2_state.state_id, normalizer
     )
     baseline_c2_comparer = AbsoluteValueComparer()
     baseline_c2_detector = ADWIN()

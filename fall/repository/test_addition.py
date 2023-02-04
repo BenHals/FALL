@@ -1,14 +1,15 @@
 from river.tree import HoeffdingTreeClassifier
 
-from fall.concept_representations import ErrorRateRepresentation
+from fall.concept_representations import ErrorRateRepresentation, MetaFeatureNormalizer
 from fall.repository import Repository
 
 
 def test_make_state() -> None:
     """Test the make state function."""
+    normalizer = MetaFeatureNormalizer()
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id, normalizer),
     )
     s1 = repo.make_state(1)
     s2 = repo.make_state(2)
@@ -23,9 +24,10 @@ def test_make_state() -> None:
 
 def test_add_next_state() -> None:
     """Test automatic repo state construction."""
+    normalizer = MetaFeatureNormalizer()
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id, normalizer),
     )
     # pylint: disable=too-many-statements, duplicate-code, R0801
     s1 = repo.add_next_state()

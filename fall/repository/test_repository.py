@@ -1,7 +1,7 @@
 from river.datasets import synth
 from river.tree import HoeffdingTreeClassifier
 
-from fall.concept_representations import ErrorRateRepresentation
+from fall.concept_representations import ErrorRateRepresentation, MetaFeatureNormalizer
 from fall.repository import Repository
 from fall.utils import Observation
 
@@ -9,9 +9,10 @@ from fall.utils import Observation
 def test_step_states() -> None:
     """Test step_all statistics."""
     # pylint: disable="too-many-statements"
+    normalizer = MetaFeatureNormalizer()
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id, normalizer),
     )
     steps = [10, 5, 20]
     s1 = repo.add_next_state()
@@ -88,9 +89,10 @@ def test_step_states() -> None:
 def test_state_predictions_active() -> None:
     """Test predictions in active mode"""
     # pylint: disable="too-many-statements"
+    normalizer = MetaFeatureNormalizer()
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id, normalizer),
     )
     dataset = synth.STAGGER()
     s1 = repo.add_next_state()
@@ -122,9 +124,10 @@ def test_state_predictions_active() -> None:
 def test_state_predictions_all() -> None:
     """Test predictions in all mode"""
     # pylint: disable="too-many-statements"
+    normalizer = MetaFeatureNormalizer()
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id, normalizer),
     )
     dataset = synth.STAGGER()
     s1 = repo.add_next_state()

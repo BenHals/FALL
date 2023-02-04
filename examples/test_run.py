@@ -1,19 +1,14 @@
-import matplotlib.animation
-import matplotlib.pyplot as plt
 from river.drift.adwin import ADWIN
 from river.tree.hoeffding_tree_classifier import HoeffdingTreeClassifier
 
 from fall.adaptive_learning.base import BaseBufferedAdaptiveLearner
 from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
-from fall.concept_representations import (  # ErrorRateRepresentation,
-    FingerprintRepresentation,
-)
+from fall.concept_representations import FingerprintRepresentation
 from fall.data.datastream import ConceptSegmentDataStream, make_stream_concepts
 from fall.data.synthetic.wind_sim import WindSimGenerator
 from fall.data.transition_patterns import circular_transition_pattern
 from fall.data.utils import Concept
-from fall.evaluation.monitoring import Monitor
-from fall.repository import CosineComparer  # AbsoluteValueComparer,
+from fall.repository import CosineComparer
 
 seed = 42
 s0 = WindSimGenerator(concept=3, sample_random_state_init=seed)
@@ -54,17 +49,9 @@ if __name__ == "__main__":
     print(pattern)
     print(concept_segments)
     print(datastream)
-
-    monitor = Monitor(figsize=(12, 8))
-    save = False
-    if save:
-        ani = monitor.run_monitor(
-            datastream, classifier, baseline, interval=1, updates_per_frame=1, total_n_frames=100
-        )
-        f = r"animation.mp4"
-        # Requires FFMPEG to be installed separately.
-        writervideo = matplotlib.animation.FFMpegWriter(fps=60)
-        ani.save(f, writer=writervideo)
-    else:
-        ani = monitor.run_monitor(datastream, classifier, baseline, interval=0.5, updates_per_frame=5)
-        plt.show()
+    stream_iter = iter(datastream)
+    for i in range(100):
+        X, y = next(stream_iter)
+        if X is not None:
+            p = classifier.predict_one(X)
+            classifier.learn_one(X, y)

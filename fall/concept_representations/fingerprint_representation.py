@@ -7,6 +7,7 @@ from fall.concept_representations.rolling_stats import RollingTimeseries
 from fall.utils import Observation
 
 from .meta_feature_distributions import BaseDistribution, GaussianDistribution
+from .normalizer import MetaFeatureNormalizer
 
 
 class FingerprintRepresentation(ConceptRepresentation):
@@ -15,8 +16,15 @@ class FingerprintRepresentation(ConceptRepresentation):
     With zero observations, we default to an error rate of 0.0 to represent maximum performance.
     This is a common (implied) comparison target when testing error_rate."""
 
-    def __init__(self, window_size: int, concept_id: int, mode: str = "active", update_period: int = 1):
-        super().__init__(window_size, concept_id, mode, update_period)
+    def __init__(
+        self,
+        window_size: int,
+        concept_id: int,
+        normalizer: MetaFeatureNormalizer,
+        mode: str = "active",
+        update_period: int = 1,
+    ):
+        super().__init__(window_size, concept_id, normalizer, mode, update_period)
 
         self.observed_stats_y = RollingTimeseries(window_size)
         self.observed_stats_p = RollingTimeseries(window_size)
@@ -44,7 +52,7 @@ class FingerprintRepresentation(ConceptRepresentation):
             self.feature_names.append(feature_name)
 
         # We have all metafeatures calculated by the RollingTimeseries, for y, p, e and each feature.
-        self.n_meta_featues = len(self.observed_stats.observed_stats_y) * (3 + len(self.feature_names))
+        self.n_meta_featues = len(self.observed_stats_y.statistic_names) * (3 + len(self.feature_names))
         self.meta_feature_values = [0.0] * self.n_meta_featues
         # for active we want to remember only updates over the last window
         # otherwise, we want to remember all updates.

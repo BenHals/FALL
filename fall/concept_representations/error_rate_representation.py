@@ -5,6 +5,7 @@ from river.stats import Mean
 from fall.concept_representations import ConceptRepresentation
 
 from .meta_feature_distributions import GaussianDistribution
+from .normalizer import MetaFeatureNormalizer
 
 
 class ErrorRateRepresentation(ConceptRepresentation):
@@ -13,8 +14,15 @@ class ErrorRateRepresentation(ConceptRepresentation):
     With zero observations, we default to an error rate of 0.0 to represent maximum performance.
     This is a common (implied) comparison target when testing error_rate."""
 
-    def __init__(self, window_size: int, concept_id: int, mode: str = "active", update_period: int = 1):
-        super().__init__(window_size, concept_id, mode, update_period)
+    def __init__(
+        self,
+        window_size: int,
+        concept_id: int,
+        normalizer: MetaFeatureNormalizer,
+        mode: str = "active",
+        update_period: int = 1,
+    ):
+        super().__init__(window_size, concept_id, normalizer, mode, update_period)
         self.window_error_rate = Mean()
         self.meta_feature_values = [0.0]
         # for active we want to remember only updates over the last window
