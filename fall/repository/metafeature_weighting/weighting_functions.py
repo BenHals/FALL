@@ -267,6 +267,6 @@ def fisher_overall_weight(
     counts = metafeature_counts_matrix[:, :, k][active_state_mask].reshape(-1)
     between_active_fisher_score = fisher_score(scaled_means, counts, scaled_overall_stdev)
 
-    feature_importance_weight = max(between_active_fisher_score, np.mean(between_segment_fisher_scores))
+    feature_importance_weight = max(between_active_fisher_score, float(np.mean(between_segment_fisher_scores)))
     weight = feature_importance_weight * scale_factor
     return weight
