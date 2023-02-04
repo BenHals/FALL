@@ -342,7 +342,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         for _, representation in self.active_window_state_representations.items():
             representation.predict_one(unsupervised_observation)
 
-        self.representation_comparer.train_unsupervised(self.repository)
+        self.representation_comparer.train_unsupervised(self.repository, self.normalizer)
         self.unsupervised_active_window.append(unsupervised_observation)
 
         self.unsupervised_timestep += 1
@@ -392,7 +392,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         for _, representation in self.active_window_state_representations.items():
             representation.learn_one(supervised_observation)
 
-        self.representation_comparer.train_supervised(self.repository)
+        self.representation_comparer.train_supervised(self.repository, self.normalizer)
         self.supervised_active_window.append(supervised_observation)
         self.supervised_timestep += 1
 

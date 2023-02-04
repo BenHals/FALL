@@ -14,6 +14,7 @@ from fall.data.transition_patterns import circular_transition_pattern
 from fall.data.utils import Concept
 from fall.evaluation.monitoring import Monitor
 from fall.repository import CosineComparer  # AbsoluteValueComparer,
+from fall.repository.metafeature_weighting.weighting_functions import random_weighting
 
 seed = 42
 s0 = WindSimGenerator(concept=3, sample_random_state_init=seed)
@@ -39,7 +40,7 @@ classifier = BaseBufferedAdaptiveLearner(
     representation_constructor=FingerprintRepresentation,
     train_representation=True,
     # representation_comparer=AbsoluteValueComparer(),
-    representation_comparer=CosineComparer(),
+    representation_comparer=CosineComparer(random_weighting),
     drift_detector_constructor=lambda: ADWIN(delta=0.0002),
     representation_window_size=50,
     representation_update_period=1,

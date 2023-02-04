@@ -32,6 +32,8 @@ class ErrorRateRepresentation(ConceptRepresentation):
     def update_supervised(self) -> None:
         while self.new_supervised:
             new_sup_ob = self.new_supervised.popleft()
+            if not self.initialized:
+                self.initialize(new_sup_ob)
             new_is_correct = new_sup_ob.predictions[self.concept_id] == new_sup_ob.y
             self.window_error_rate.update(0 if new_is_correct else 1)
             if len(self.supervised_window) >= self.window_size:

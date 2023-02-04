@@ -83,6 +83,12 @@ class ConceptRepresentation(Base, abc.ABC):
         # Each meta-feature has a distribution across a concept.
         self.meta_feature_distributions: List[BaseDistribution] = []
 
+        # We may need to initialize after seeing an observation to learn correct dimensions
+        self.initialized = False
+
+    def initialize(self, observation: Observation) -> None:
+        self.initialized = True
+
     def learn_one(self, supervised_observation: Observation) -> None:
         """Update a concept representation with a single observation drawn from a concept,
         classified by a given classifier. Updates supervised meta-features, as in river."""
