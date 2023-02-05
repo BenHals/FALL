@@ -61,6 +61,14 @@ class AbsoluteValueComparer(RepresentationComparer):
     def get_similarity(self, rep_a: ConceptRepresentation, rep_b: ConceptRepresentation) -> float:
         weight_prior = rep_a.get_weight_prior()[0] * rep_b.get_weight_prior()[0]
         weight = self.weights[0] * weight_prior
+        print(
+            "Difference",
+            rep_a.meta_feature_values[0] - rep_b.meta_feature_values[0],
+            "WEight:",
+            weight,
+            "prior",
+            weight_prior,
+        )
         return 1 - weight * abs(rep_a.meta_feature_values[0] - rep_b.meta_feature_values[0])
 
 

@@ -47,4 +47,6 @@ def test_absolute_value_comparer() -> None:
     # baseline gives accuracy, i.e., maximizing similarity means selecting
     # the most accurate classifier.
     assert rep_1_similarity == [1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]
-    assert_array_almost_equal(rep_5_similarity, [1.0, 0 / 1, 1 / 2, 2 / 3, 3 / 4, 4 / 5, 4 / 5, 3 / 5, 2 / 5])
+    # True values: [1.0, 0 / 1, 1 / 2, 2 / 3, 3 / 4, 4 / 5, 4 / 5, 3 / 5, 2 / 5]
+    # Since we have a window size of 5, the representation doesn't update for the first 5 timesteps
+    assert_array_almost_equal(rep_5_similarity, [1.0, 1.0, 1.0, 1.0, 1.0, 4 / 5, 4 / 5, 3 / 5, 2 / 5])

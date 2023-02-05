@@ -102,6 +102,7 @@ class ConceptRepresentation(Base, abc.ABC):
         self.new_supervised.append(supervised_observation)
         self.supervised_timestep = supervised_observation.seen_at
         self.update_supervised()
+        print(self.supervised_window)
 
         # If required, extract a fingerprint and use it to update the concept
         if self.update_on_supervised:
@@ -110,6 +111,8 @@ class ConceptRepresentation(Base, abc.ABC):
                 self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)
                 self.last_supervised_concept_update = self.last_supervised_update
+
+        print(self.meta_feature_values[0])
 
     def predict_one(self, unsupervised_observation: Observation) -> None:
         """Update a concept representation with a single observation drawn from a concept,
@@ -185,8 +188,10 @@ class ConceptRepresentation(Base, abc.ABC):
         weight_priors = [1.0] * len(self.meta_feature_values)
 
         # Reduce weight on supervised meta-features for a period after an evolution
+        # Both values start as negative, so if both are positive then the classifier has updated these values
+        has_had_updates = (self.last_supervised_concept_update > 0) and (self.last_classifier_evolution_timestep > 0)
         time_since_last_evolution = self.last_supervised_concept_update - self.last_classifier_evolution_timestep
-        if time_since_last_evolution < self.window_size * 2:
+        if has_had_updates and time_since_last_evolution < self.window_size * 2:
             for i in self.classifier_meta_feature_indexs:
                 weight_priors[i] = time_since_last_evolution / self.window_size * 2
 
