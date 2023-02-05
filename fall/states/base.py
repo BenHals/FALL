@@ -38,6 +38,7 @@ class State:  # pylint: disable=too-few-public-methods
 
         self.seen_weight = 0.0
         self.active_seen_weight = 0.0
+        self.seen_weight_since_active = 0.0
         self.weight_since_last_active = 0.0
         self.last_trained_active_timestep = -1.0
 
@@ -167,6 +168,7 @@ class State:  # pylint: disable=too-few-public-methods
         self.weight_since_last_active += sample_weight
         if is_active:
             self.active_seen_weight += sample_weight
+            self.seen_weight_since_active += sample_weight
             self.weight_since_last_evolution += sample_weight
             self.weight_since_last_active = 0
 
@@ -192,6 +194,9 @@ class State:  # pylint: disable=too-few-public-methods
         """Deactivate training representation.
         Some representations are not trained, e.g., implied error rate."""
         self.train_representation = False
+
+    def transition_from(self) -> None:
+        self.seen_weight_since_active = 0.0
 
     def __str__(self) -> str:
         return f"<State {self.state_id}>"

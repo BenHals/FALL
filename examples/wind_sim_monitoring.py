@@ -38,17 +38,17 @@ concept_segments = make_stream_concepts([c0, c1, c2, c3], pattern, segment_lengt
 datastream = ConceptSegmentDataStream(concept_segments, 0, seed)
 
 classifier = BaseBufferedAdaptiveLearner(
-    classifier_constructor=lambda: EvolutionHoeffdingTree(grace_period=25),
+    classifier_constructor=lambda: EvolutionHoeffdingTree(grace_period=100),
     # representation_constructor=ErrorRateRepresentation,
     representation_constructor=FingerprintRepresentation,
     train_representation=True,
     # construct_pair_representations=True,
-    prediction_mode="all",
+    # prediction_mode="all",
     # representation_comparer=AbsoluteValueComparer(),
     representation_comparer=CosineComparer(fisher_overall_weighting),
-    drift_detector_constructor=lambda: ADWIN(delta=0.001),
-    representation_window_size=50,
-    representation_update_period=1,
+    drift_detector_constructor=lambda: ADWIN(delta=0.002),
+    representation_window_size=100,
+    representation_update_period=10,
     reidentification_check_schedulers=[DriftDetectionCheck(100)],
     background_state_mode=None,
     drift_detection_mode="lower",

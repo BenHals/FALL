@@ -36,7 +36,8 @@ class RepresentationComparer(Base, abc.ABC):
 
     def train_supervised(self, repository: Repository, normalizer: MetaFeatureNormalizer) -> None:
         """Train trainable components on the repository."""
-        self.weights = self.weighting_func(repository, normalizer)
+        if normalizer.initialized:
+            self.weights = self.weighting_func(repository, normalizer)
 
     def train_unsupervised(self, repository: Repository, normalizer: MetaFeatureNormalizer) -> None:
         """Train trainable components on the repository."""
@@ -93,8 +94,9 @@ class CosineComparer(RepresentationComparer):
         vec_b = np.array(rep_b.overall_normalize(rep_b.meta_feature_values))
         weight_prior = np.array(rep_a.get_weight_prior()) * np.array(rep_b.get_weight_prior())
         # weight_prior = np.ones(len(self.weights))
-        print(weight_prior)
+        # print(weight_prior)
         weights = np.array(self.weights) * weight_prior
+        print(weights)
         # print(vec_a, vec_b, weights, get_cosine_distance(vec_a, vec_b, weights))
         return 1 - get_cosine_distance(vec_a, vec_b, weights)
 
@@ -103,8 +105,8 @@ def get_cosine_distance(vec_a: np.ndarray, vec_b: np.ndarray, weights: np.ndarra
     """Get the weighted cosine distance between two vectors.
     Internally normalizes weights.
     """
-    # normed_weights = (weights) / (np.max(weights))
-    normed_weights = (weights) / (np.sum(weights))
+    normed_weights = (weights - np.min(weights)) / (np.max(weights) - np.min(weights))
+    # normed_weights = (normed_weights) / (np.sum(normed_weights))
     try:
         c = cosine(vec_a, vec_b, w=normed_weights)
     except ZeroDivisionError:

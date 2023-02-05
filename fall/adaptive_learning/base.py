@@ -413,6 +413,10 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # Update state statistics
         self.repository.step_all(self.active_state_id)
 
+        if not self.normalizer.initialized:
+            self.performance_monitor.set_final_active_state(self.get_active_state())
+            return
+
         in_drift, in_warning, active_state_relevance = self.active_state_drift_detection()
         observation.add_active_state_relevance(active_state_relevance, self.active_state_id)
         # if the observation is stable then we already trained on it, so we should add
@@ -424,16 +428,21 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.performance_monitor.active_state_last_relevance = active_state_relevance
         self.performance_monitor.state_relevances[active_state.state_id] = active_state.get_in_concept_relevance()
 
-        # if self.construct_pair_representations:
-        #     for state_id, state in self.repository.states.items():
-        #         if state_id == active_state.state_id:
-        #             continue
-        # active_representation = self.active_window_state_representations.get(
-        #     state_id, self.construct_active_representation(state)
-        # )
-        # self.performance_monitor.state_relevances[state_id] = self.representation_comparer.get_state_rep_similarity(
-        #     state, active_representation
-        # )
+        if self.construct_pair_representations:
+            for state_id, state in self.repository.states.items():
+                if state_id == active_state.state_id:
+                    continue
+                active_representation = self.active_window_state_representations.setdefault(
+                    state_id, self.construct_active_representation(state)
+                )
+                self.performance_monitor.state_relevances[
+                    state_id
+                ] = self.representation_comparer.get_state_rep_similarity(state, active_representation)
+
+        # If we just transitioned, we have some grace period before checking for drift
+        if active_state.seen_weight_since_active < active_state.get_self_representation().window_size * 2:
+            self.performance_monitor.set_final_active_state(self.get_active_state())
+            return
 
         # Check if we need to perform reidentification
         # either from a scheduled check for from a drift detection.
@@ -648,6 +657,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def transition_active_state(self, next_active_state: State, in_drift: bool, in_warning: bool) -> None:
         """Transition to an active state in the repository."""
         current_active_state = self.get_active_state()
+        current_active_state.transition_from()
         self.active_state_id = next_active_state.state_id
         self.repository.add_transition(
             current_active_state, next_active_state, in_drift=in_drift, in_warning=in_warning

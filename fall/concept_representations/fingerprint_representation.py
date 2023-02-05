@@ -110,3 +110,12 @@ class FingerprintRepresentation(ConceptRepresentation):
 
     def get_values(self) -> List:
         return self.meta_feature_values
+
+    def handle_classifier_evolution(self) -> None:
+        """Handle changes in behaviour due to a classifier evolution.
+        For example, supervised meta-features may need to be reset."""
+        self.last_classifier_evolution_timestep = self.supervised_timestep
+        for i in self.classifier_meta_feature_indexs:
+            current_mean = self.meta_feature_distributions[i].mean
+            self.meta_feature_distributions[i] = GaussianDistribution(memory_size=1 if self.mode == "active" else -1)
+            self.meta_feature_distributions[i].learn_one(current_mean)

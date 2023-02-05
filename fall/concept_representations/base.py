@@ -178,9 +178,9 @@ class ConceptRepresentation(Base, abc.ABC):
 
         # Reduce weight on supervised meta-features for a period after an evolution
         time_since_last_evolution = self.last_supervised_concept_update - self.last_classifier_evolution_timestep
-        if time_since_last_evolution < self.window_size * 2:
+        if time_since_last_evolution < self.window_size * 5:
             for i in self.classifier_meta_feature_indexs:
-                weight_priors[i] = time_since_last_evolution / self.window_size * 2
+                weight_priors[i] = time_since_last_evolution / self.window_size * 5
 
         return weight_priors
 
