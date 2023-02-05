@@ -52,6 +52,13 @@ class FingerprintRepresentation(ConceptRepresentation):
         # We have all metafeatures calculated by the RollingTimeseries, for y, p, e and each feature.
         self.n_meta_featues = len(self.observed_stats_y.statistic_names) * (3 + len(self.feature_names))
         self.meta_feature_values = [0.0] * self.n_meta_featues
+
+        # classifier meta-features are those from predictions and errors
+        # These indexes select these meta-features based on the construction in extract_fingerprint
+        self.classifier_meta_feature_indexs = list(
+            range(len(self.observed_stats_y.statistic_names), len(self.observed_stats_y.statistic_names) * 3)
+        )
+
         # for active we want to remember only updates over the last window
         # otherwise, we want to remember all updates.
         self.meta_feature_distributions = [

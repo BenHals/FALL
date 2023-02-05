@@ -76,9 +76,11 @@ class ConceptRepresentation(Base, abc.ABC):
         self.last_unsupervised_update = -1.0
         self.last_supervised_concept_update = -1.0
         self.last_unsupervised_concept_update = -1.0
+        self.last_classifier_evolution_timestep = -1.0
 
         # A concept representation represents a concept as a finite set of values, or meta-features
         self.meta_feature_values: List[float] = []
+        self.classifier_meta_feature_indexs: list[int] = []
 
         # Each meta-feature has a distribution across a concept.
         self.meta_feature_distributions: List[BaseDistribution] = []
@@ -169,6 +171,23 @@ class ConceptRepresentation(Base, abc.ABC):
     def get_values(self) -> List:
         """Return a single value describing each meta-feature in the representation.
         Returned as a vector, even for single meta-feature representations."""
+
+    def get_weight_prior(self) -> List[float]:
+        """Get priors for meta-feature weights."""
+        weight_priors = [1.0] * len(self.meta_feature_values)
+
+        # Reduce weight on supervised meta-features for a period after an evolution
+        time_since_last_evolution = self.last_supervised_concept_update - self.last_classifier_evolution_timestep
+        if time_since_last_evolution < self.window_size * 2:
+            for i in self.classifier_meta_feature_indexs:
+                weight_priors[i] = time_since_last_evolution / self.window_size * 2
+
+        return weight_priors
+
+    def handle_classifier_evolution(self) -> None:
+        """Handle changes in behaviour due to a classifier evolution.
+        For example, supervised meta-features may need to be reset."""
+        self.last_classifier_evolution_timestep = self.supervised_timestep
 
     @property
     def _vector(self) -> bool:

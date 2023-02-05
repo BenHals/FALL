@@ -25,6 +25,7 @@ class ErrorRateRepresentation(ConceptRepresentation):
         super().__init__(window_size, concept_id, normalizer, mode, update_period)
         self.window_error_rate = Mean()
         self.meta_feature_values = [0.0]
+        self.classifier_meta_feature_indexs = [1]
         # for active we want to remember only updates over the last window
         # otherwise, we want to remember all updates.
         self.meta_feature_distributions = [GaussianDistribution(memory_size=1 if mode == "active" else -1)]

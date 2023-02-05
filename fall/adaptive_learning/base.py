@@ -402,8 +402,12 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def step(self, observation: Observation) -> None:
         """Update internal state"""
         active_state = self.get_active_state()
-        self.performance_monitor.step_reset(active_state)
 
+        # Apply logic to handle classifier evolution
+        if active_state.evolved_at_last_update:
+            active_state.concept_representation[active_state.state_id].handle_classifier_evolution()
+
+        self.performance_monitor.step_reset(active_state)
         self.performance_monitor.last_observation = observation
 
         # Update state statistics

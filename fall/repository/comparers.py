@@ -58,7 +58,9 @@ class AbsoluteValueComparer(RepresentationComparer):
         super().__init__(weighting_func)
 
     def get_similarity(self, rep_a: ConceptRepresentation, rep_b: ConceptRepresentation) -> float:
-        return 1 - abs(rep_a.meta_feature_values[0] - rep_b.meta_feature_values[0])
+        weight_prior = rep_a.get_weight_prior()[0] * rep_b.get_weight_prior()[0]
+        weight = self.weights[0] * weight_prior
+        return 1 - weight * abs(rep_a.meta_feature_values[0] - rep_b.meta_feature_values[0])
 
 
 class CosineComparer(RepresentationComparer):
@@ -89,7 +91,10 @@ class CosineComparer(RepresentationComparer):
         # different vectors to the same value.
         vec_a = np.array(rep_a.overall_normalize(rep_a.meta_feature_values))
         vec_b = np.array(rep_b.overall_normalize(rep_b.meta_feature_values))
-        weights = np.array(self.weights)
+        weight_prior = np.array(rep_a.get_weight_prior()) * np.array(rep_b.get_weight_prior())
+        # weight_prior = np.ones(len(self.weights))
+        print(weight_prior)
+        weights = np.array(self.weights) * weight_prior
         # print(vec_a, vec_b, weights, get_cosine_distance(vec_a, vec_b, weights))
         return 1 - get_cosine_distance(vec_a, vec_b, weights)
 
