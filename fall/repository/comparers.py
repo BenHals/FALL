@@ -95,7 +95,11 @@ class CosineComparer(RepresentationComparer):
         weight_prior = np.array(rep_a.get_weight_prior()) * np.array(rep_b.get_weight_prior())
         # weight_prior = np.ones(len(self.weights))
         # print(weight_prior)
-        weights = np.array(self.weights) * weight_prior
+        weights = np.array(self.weights)
+        # max_weight = weights.max()
+        weights = weights * weight_prior
+        weights = weights / rep_a.stdevs
+        weights = np.nan_to_num(weights, posinf=0)
         print(weights)
         # print(vec_a, vec_b, weights, get_cosine_distance(vec_a, vec_b, weights))
         return 1 - get_cosine_distance(vec_a, vec_b, weights)

@@ -91,6 +91,10 @@ class ConceptRepresentation(Base, abc.ABC):
     def initialize(self, observation: Observation) -> None:
         self.initialized = True
 
+    @property
+    def stable(self) -> bool:
+        return len(self.supervised_window) >= self.window_size
+
     def learn_one(self, supervised_observation: Observation) -> None:
         """Update a concept representation with a single observation drawn from a concept,
         classified by a given classifier. Updates supervised meta-features, as in river."""
@@ -178,9 +182,9 @@ class ConceptRepresentation(Base, abc.ABC):
 
         # Reduce weight on supervised meta-features for a period after an evolution
         time_since_last_evolution = self.last_supervised_concept_update - self.last_classifier_evolution_timestep
-        if time_since_last_evolution < self.window_size * 5:
+        if time_since_last_evolution < self.window_size * 2:
             for i in self.classifier_meta_feature_indexs:
-                weight_priors[i] = time_since_last_evolution / self.window_size * 5
+                weight_priors[i] = time_since_last_evolution / self.window_size * 2
 
         return weight_priors
 

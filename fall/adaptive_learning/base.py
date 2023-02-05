@@ -349,7 +349,14 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
 
         self.unsupervised_timestep += 1
 
-    def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0, timestep: Optional[int] = None) -> None:
+    def learn_one(
+        self,
+        x: dict,
+        y: ClfTarget,
+        sample_weight: float = 1.0,
+        timestep: Optional[int] = None,
+        true_concept_idx: Optional[int] = None,
+    ) -> None:
         active_state = self.get_active_state()
 
         supervised_observation = Observation(
@@ -369,6 +376,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         trainable_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
         for state in trainable_states:
             state.learn_one(supervised_observation)
+        self.representation_comparer.train_supervised(self.repository, self.normalizer)
+
         self.performance_monitor.last_trained_observation = supervised_observation
         self.performance_monitor.active_state_evolved = self.get_active_state().evolved_at_last_update
 
@@ -395,7 +404,6 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         for _, representation in self.active_window_state_representations.items():
             representation.learn_one(supervised_observation)
 
-        self.representation_comparer.train_supervised(self.repository, self.normalizer)
         self.supervised_active_window.append(supervised_observation)
         self.supervised_timestep += 1
 
@@ -413,7 +421,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # Update state statistics
         self.repository.step_all(self.active_state_id)
 
-        if not self.normalizer.initialized:
+        if not self.normalizer.initialized or not active_state.get_self_representation().stable:
             self.performance_monitor.set_final_active_state(self.get_active_state())
             return
 
@@ -853,7 +861,14 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
 
         return p
 
-    def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0, timestep: Optional[int] = None) -> None:
+    def learn_one(
+        self,
+        x: dict,
+        y: ClfTarget,
+        sample_weight: float = 1.0,
+        timestep: Optional[int] = None,
+        true_concept_idx: Optional[int] = None,
+    ) -> None:
         self.performance_monitor.buffer_step_reset(self.active_state_id)
 
         active_state = self.get_active_state()
@@ -892,6 +907,8 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
             for state in trained_states:
                 state.learn_one(stable_observation)
+            self.representation_comparer.train_supervised(self.repository, self.normalizer)
+
             self.performance_monitor.last_trained_observation = stable_observation
             self.performance_monitor.active_state_evolved = self.get_active_state().evolved_at_last_update
 

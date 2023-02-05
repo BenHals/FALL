@@ -3,8 +3,12 @@ import matplotlib.pyplot as plt
 from river.drift.adwin import ADWIN
 from river.tree.hoeffding_tree_classifier import HoeffdingTreeClassifier
 
-from fall.adaptive_learning.base import BaseBufferedAdaptiveLearner
-from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
+from fall.adaptive_learning.base import (
+    BaseBufferedAdaptiveLearner,
+    get_increasing_buffer_scheduler,
+)
+
+# from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
 from fall.classifiers import EvolutionHoeffdingTree
 from fall.concept_representations import (  # ErrorRateRepresentation,
     FingerprintRepresentation,
@@ -38,7 +42,9 @@ concept_segments = make_stream_concepts([c0, c1, c2, c3], pattern, segment_lengt
 datastream = ConceptSegmentDataStream(concept_segments, 0, seed)
 
 classifier = BaseBufferedAdaptiveLearner(
-    classifier_constructor=lambda: EvolutionHoeffdingTree(grace_period=100),
+    classifier_constructor=lambda: EvolutionHoeffdingTree(grace_period=50),
+    buffer_timeout_max=250,
+    buffer_timeout_scheduler=get_increasing_buffer_scheduler(0.5),
     # representation_constructor=ErrorRateRepresentation,
     representation_constructor=FingerprintRepresentation,
     train_representation=True,
@@ -46,10 +52,10 @@ classifier = BaseBufferedAdaptiveLearner(
     # prediction_mode="all",
     # representation_comparer=AbsoluteValueComparer(),
     representation_comparer=CosineComparer(fisher_overall_weighting),
-    drift_detector_constructor=lambda: ADWIN(delta=0.002),
+    drift_detector_constructor=lambda: ADWIN(delta=0.05),
     representation_window_size=100,
     representation_update_period=10,
-    reidentification_check_schedulers=[DriftDetectionCheck(100)],
+    reidentification_check_schedulers=[],
     background_state_mode=None,
     drift_detection_mode="lower",
 )

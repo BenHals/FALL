@@ -174,7 +174,12 @@ class State:  # pylint: disable=too-few-public-methods
 
     def add_active_state_relevance(self, active_state_relevance: float) -> None:
         """Update statistics tracking active_state_relevance.
-        Should only be called when an observation is deemed stable."""
+        Should only be called when an observation is deemed stable,
+        and when the current representation is stable (has seen enough)
+        elements to calculate accurate statistics."""
+
+        if not self.get_self_representation().stable:
+            return
         self.in_concept_relevance_distribution.learn_one(active_state_relevance)
         self.in_concept_relevance_record.update(active_state_relevance)
         self.current_relevance_record.update(active_state_relevance)
