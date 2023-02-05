@@ -216,9 +216,10 @@ def test_drift_detection() -> None:
             baseline_active_representation.meta_feature_values[0]
             == al_classifier.background_state_active_representation.meta_feature_values[0]
         )
-        assert baseline_relevance == al_classifier.performance_monitor.active_state_last_relevance
-        assert baseline_relevance == al_classifier.performance_monitor.background_state_relevance
-        _ = baseline_detector.update(baseline_relevance)  # type: ignore
+        if al_classifier.get_active_state().get_self_representation().stable and al_classifier.normalizer.initialized:
+            assert baseline_relevance == al_classifier.performance_monitor.active_state_last_relevance
+            assert baseline_relevance == al_classifier.performance_monitor.background_state_relevance
+            _ = baseline_detector.update(baseline_relevance)  # type: ignore
 
         assert baseline_detector.total == al_classifier.drift_detector.total  # type: ignore
 
@@ -300,10 +301,11 @@ def test_drift_transition() -> None:
         al_classifier.learn_one(x, y)
         baseline_c1_state.learn_one(ob, force_train_classifier=True)
         baseline_c1_active_representation.learn_one(ob)
-        baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
-            baseline_c1_state, baseline_c1_active_representation
-        )
-        _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
+        if baseline_c1_state.get_self_representation().stable:
+            baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
+                baseline_c1_state, baseline_c1_active_representation
+            )
+            _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
         assert not found_drift
         assert not al_classifier.performance_monitor.in_drift
         assert not al_classifier.performance_monitor.made_transition
@@ -318,12 +320,12 @@ def test_drift_transition() -> None:
         al_classifier.learn_one(x, y)
         baseline_c1_state.learn_one(ob, force_train_classifier=True)
         baseline_c1_active_representation.learn_one(ob)
-
-        baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
-            baseline_c1_state, baseline_c1_active_representation
-        )
-        assert baseline_c1_relevance == al_classifier.performance_monitor.active_state_last_relevance
-        _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
+        if baseline_c1_state.get_self_representation().stable:
+            baseline_c1_relevance = baseline_c1_comparer.get_state_rep_similarity(
+                baseline_c1_state, baseline_c1_active_representation
+            )
+            assert baseline_c1_relevance == al_classifier.performance_monitor.active_state_last_relevance
+            _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
         in_drift = baseline_c1_detector.drift_detected
         if in_drift:
             found_drift = True
@@ -375,12 +377,12 @@ def test_drift_transition() -> None:
         al_classifier.learn_one(x, y)
         baseline_c2_state.learn_one(ob, force_train_classifier=True)
         baseline_c2_active_representation.learn_one(ob)
-
-        baseline_c2_relevance = baseline_c2_comparer.get_state_rep_similarity(
-            baseline_c2_state, baseline_c2_active_representation
-        )
-        assert baseline_c2_relevance == al_classifier.performance_monitor.active_state_last_relevance
-        _ = baseline_c2_detector.update(baseline_c2_relevance)  # type: ignore
+        if baseline_c2_state.get_self_representation().stable:
+            baseline_c2_relevance = baseline_c2_comparer.get_state_rep_similarity(
+                baseline_c2_state, baseline_c2_active_representation
+            )
+            assert baseline_c2_relevance == al_classifier.performance_monitor.active_state_last_relevance
+            _ = baseline_c2_detector.update(baseline_c2_relevance)  # type: ignore
         in_drift = baseline_c2_detector.drift_detected
         if in_drift:
             found_drift = True

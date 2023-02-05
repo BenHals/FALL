@@ -429,7 +429,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         observation.add_active_state_relevance(active_state_relevance, self.active_state_id)
         # if the observation is stable then we already trained on it, so we should add
         # relevance now.
-        if observation.is_stable:
+        if observation.is_stable and active_state.get_self_representation().stable:
             active_state.add_active_state_relevance(active_state_relevance)
         self.performance_monitor.in_drift = in_drift
         self.performance_monitor.in_warning = in_warning
@@ -447,10 +447,10 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
                     state_id
                 ] = self.representation_comparer.get_state_rep_similarity(state, active_representation)
 
-        # If we just transitioned, we have some grace period before checking for drift
-        if active_state.seen_weight_since_active < active_state.get_self_representation().window_size * 2:
-            self.performance_monitor.set_final_active_state(self.get_active_state())
-            return
+        # # If we just transitioned, we have some grace period before checking for drift
+        # if active_state.seen_weight_since_active < active_state.get_self_representation().window_size * 2:
+        #     self.performance_monitor.set_final_active_state(self.get_active_state())
+        #     return
 
         # Check if we need to perform reidentification
         # either from a scheduled check for from a drift detection.
@@ -532,7 +532,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         in_drift, in_warning, active_state_relevance = self.perform_drift_detection(
             active_state, active_representation, self.drift_detector
         )
-        active_state.add_active_state_relevance(active_state_relevance)
+        if active_state.get_self_representation().stable:
+            active_state.add_active_state_relevance(active_state_relevance)
         return in_drift, in_warning, active_state_relevance
 
     def perform_drift_detection(

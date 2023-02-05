@@ -62,6 +62,7 @@ class ConceptRepresentation(Base, abc.ABC):
         self.update_period: int = update_period
         self.update_on_supervised: bool = True
         self.update_on_unsupervised: bool = False
+        self.normalize: bool = True
 
         self.updates_per_window = window_size // update_period
 

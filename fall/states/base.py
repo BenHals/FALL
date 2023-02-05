@@ -119,7 +119,7 @@ class State:  # pylint: disable=too-few-public-methods
         is_correct = supervised_observation.y == supervised_observation.predictions[self.state_id]
         self.in_concept_accuracy_record.update(int(is_correct))  # type: ignore
 
-        if supervised_observation.active_state_relevance is not None:
+        if supervised_observation.active_state_relevance is not None and self.get_self_representation().stable:
             self.add_active_state_relevance(supervised_observation.active_state_relevance)
 
         self.last_trained_active_timestep = supervised_observation.seen_at
@@ -178,8 +178,6 @@ class State:  # pylint: disable=too-few-public-methods
         and when the current representation is stable (has seen enough)
         elements to calculate accurate statistics."""
 
-        if not self.get_self_representation().stable:
-            return
         self.in_concept_relevance_distribution.learn_one(active_state_relevance)
         self.in_concept_relevance_record.update(active_state_relevance)
         self.current_relevance_record.update(active_state_relevance)

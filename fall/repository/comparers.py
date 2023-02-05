@@ -90,8 +90,10 @@ class CosineComparer(RepresentationComparer):
         # i.e., the global distribution of the meta-feature.
         # We use the global, because two distinct concepts may locally normalize
         # different vectors to the same value.
-        vec_a = np.array(rep_a.overall_normalize(rep_a.meta_feature_values))
-        vec_b = np.array(rep_b.overall_normalize(rep_b.meta_feature_values))
+        values_a = rep_a.overall_normalize(rep_a.meta_feature_values) if rep_a.normalize else rep_a.meta_feature_values
+        values_b = rep_b.overall_normalize(rep_b.meta_feature_values) if rep_b.normalize else rep_b.meta_feature_values
+        vec_a = np.array(values_a)
+        vec_b = np.array(values_b)
         weight_prior = np.array(rep_a.get_weight_prior()) * np.array(rep_b.get_weight_prior())
         # weight_prior = np.ones(len(self.weights))
         # print(weight_prior)

@@ -25,10 +25,11 @@ class ErrorRateRepresentation(ConceptRepresentation):
         super().__init__(window_size, concept_id, normalizer, mode, update_period)
         self.window_error_rate = Mean()
         self.meta_feature_values = [0.0]
-        self.classifier_meta_feature_indexs = [1]
+        self.classifier_meta_feature_indexs = [0]
         # for active we want to remember only updates over the last window
         # otherwise, we want to remember all updates.
         self.meta_feature_distributions = [GaussianDistribution(memory_size=1 if mode == "active" else -1)]
+        self.normalize = False
 
     def update_supervised(self) -> None:
         while self.new_supervised:
@@ -56,7 +57,6 @@ class ErrorRateRepresentation(ConceptRepresentation):
         avg_error_rate = fingerprint[0]
         self.meta_feature_distributions[0].learn_one(avg_error_rate)
         self.meta_feature_values[0] = self.meta_feature_distributions[0].mean
-
         return self.meta_feature_values
 
     def update_unsupervised(self) -> None:
