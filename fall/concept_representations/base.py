@@ -104,7 +104,7 @@ class ConceptRepresentation(Base, abc.ABC):
 
         # If required, extract a fingerprint and use it to update the concept
         if self.update_on_supervised:
-            if self.last_supervised_update >= self.last_supervised_concept_update + self.update_period:
+            if self.last_supervised_update >= self.last_supervised_concept_update + self.update_period and self.stable:
                 current_fingerprint = self.extract_fingerprint()
                 self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)
@@ -119,7 +119,10 @@ class ConceptRepresentation(Base, abc.ABC):
 
         # If required, extract a fingerprint and use it to update the concept
         if self.update_on_unsupervised:
-            if self.last_unsupervised_update >= self.last_unsupervised_concept_update + self.update_period:
+            if (
+                self.last_unsupervised_update >= self.last_unsupervised_concept_update + self.update_period
+                and self.stable
+            ):
                 current_fingerprint = self.extract_fingerprint()
                 self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)

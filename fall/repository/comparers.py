@@ -100,7 +100,6 @@ class CosineComparer(RepresentationComparer):
         weights = weights * weight_prior
         weights = weights / rep_a.stdevs
         weights = np.nan_to_num(weights, posinf=0)
-        print(weights)
         # print(vec_a, vec_b, weights, get_cosine_distance(vec_a, vec_b, weights))
         return 1 - get_cosine_distance(vec_a, vec_b, weights)
 
@@ -109,7 +108,8 @@ def get_cosine_distance(vec_a: np.ndarray, vec_b: np.ndarray, weights: np.ndarra
     """Get the weighted cosine distance between two vectors.
     Internally normalizes weights.
     """
-    normed_weights = (weights - np.min(weights)) / (np.max(weights) - np.min(weights))
+    normed_weights = 1 - 0.1 * (1 - (weights - np.min(weights)) / (np.max(weights) - np.min(weights)))
+    print(weights)
     # normed_weights = (normed_weights) / (np.sum(normed_weights))
     try:
         c = cosine(vec_a, vec_b, w=normed_weights)
