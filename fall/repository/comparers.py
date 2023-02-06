@@ -121,7 +121,7 @@ def get_cosine_distance(vec_a: np.ndarray, vec_b: np.ndarray, weights: np.ndarra
     Internally normalizes weights.
     """
 
-    print(weights)
+    # print(weights)
     # normed_weights = (normed_weights) / (np.sum(normed_weights))
     try:
         c = cosine(vec_a, vec_b, w=weights)
