@@ -102,7 +102,6 @@ class ConceptRepresentation(Base, abc.ABC):
         self.new_supervised.append(supervised_observation)
         self.supervised_timestep = supervised_observation.seen_at
         self.update_supervised()
-        print(self.supervised_window)
 
         # If required, extract a fingerprint and use it to update the concept
         if self.update_on_supervised:
@@ -111,8 +110,6 @@ class ConceptRepresentation(Base, abc.ABC):
                 self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)
                 self.last_supervised_concept_update = self.last_supervised_update
-
-        print(self.meta_feature_values[0])
 
     def predict_one(self, unsupervised_observation: Observation) -> None:
         """Update a concept representation with a single observation drawn from a concept,

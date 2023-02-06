@@ -18,9 +18,12 @@ class RepresentationComparer(Base, abc.ABC):
     Different comparison strategies are available depending on representation.
     May maintain a set of weights to use during comparison."""
 
-    def __init__(self, weighting_func: Callable[[Repository, MetaFeatureNormalizer], list[float]]) -> None:
+    def __init__(
+        self, weighting_func: Callable[[Repository, MetaFeatureNormalizer], list[float]], weight_coef: float = 0.1
+    ) -> None:
         self.weighting_func = weighting_func
         self.weights: List[float] = [1.0]
+        self.weight_coef = weight_coef
 
     @abc.abstractmethod
     def get_similarity(self, rep_a: ConceptRepresentation, rep_b: ConceptRepresentation) -> float:
@@ -54,21 +57,16 @@ class AbsoluteValueComparer(RepresentationComparer):
     while a difference of 1 is a similarity of 0."""
 
     def __init__(
-        self, weighting_func: Callable[[Repository, MetaFeatureNormalizer], list[float]] = uniform_weighting
+        self,
+        weighting_func: Callable[[Repository, MetaFeatureNormalizer], list[float]] = uniform_weighting,
+        weight_coef: float = 0.1,
     ) -> None:
-        super().__init__(weighting_func)
+        super().__init__(weighting_func, weight_coef)
 
     def get_similarity(self, rep_a: ConceptRepresentation, rep_b: ConceptRepresentation) -> float:
         weight_prior = rep_a.get_weight_prior()[0] * rep_b.get_weight_prior()[0]
         weight = self.weights[0] * weight_prior
-        print(
-            "Difference",
-            rep_a.meta_feature_values[0] - rep_b.meta_feature_values[0],
-            "WEight:",
-            weight,
-            "prior",
-            weight_prior,
-        )
+        weight = 1 * (1 - self.weight_coef) + weight * self.weight_coef
         return 1 - weight * abs(rep_a.meta_feature_values[0] - rep_b.meta_feature_values[0])
 
 
@@ -81,9 +79,11 @@ class CosineComparer(RepresentationComparer):
     while a difference of 1 is a similarity of 0."""
 
     def __init__(
-        self, weighting_func: Callable[[Repository, MetaFeatureNormalizer], list[float]] = uniform_weighting
+        self,
+        weighting_func: Callable[[Repository, MetaFeatureNormalizer], list[float]] = uniform_weighting,
+        weight_coef: float = 0.1,
     ) -> None:
-        super().__init__(weighting_func)
+        super().__init__(weighting_func, weight_coef)
         self.initialized = False
 
     def initialize(self, vec: list[float]) -> None:
@@ -110,19 +110,21 @@ class CosineComparer(RepresentationComparer):
         weights = weights * weight_prior
         weights = weights / rep_a.stdevs
         weights = np.nan_to_num(weights, posinf=0)
+        normed_weights = (weights - np.min(weights)) / (np.max(weights) - np.min(weights))
+        normed_weights = np.ones_like(normed_weights) * (1 - self.weight_coef) + normed_weights * self.weight_coef
         # print(vec_a, vec_b, weights, get_cosine_distance(vec_a, vec_b, weights))
-        return 1 - get_cosine_distance(vec_a, vec_b, weights)
+        return 1 - get_cosine_distance(vec_a, vec_b, normed_weights)
 
 
 def get_cosine_distance(vec_a: np.ndarray, vec_b: np.ndarray, weights: np.ndarray) -> float:
     """Get the weighted cosine distance between two vectors.
     Internally normalizes weights.
     """
-    normed_weights = 1 - 0.1 * (1 - (weights - np.min(weights)) / (np.max(weights) - np.min(weights)))
+
     print(weights)
     # normed_weights = (normed_weights) / (np.sum(normed_weights))
     try:
-        c = cosine(vec_a, vec_b, w=normed_weights)
+        c = cosine(vec_a, vec_b, w=weights)
     except ZeroDivisionError:
         c = np.nan
     if np.isnan(c):
