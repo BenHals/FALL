@@ -535,7 +535,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         in_drift, in_warning, active_state_relevance = self.perform_drift_detection(
             active_state, active_representation, self.drift_detector
         )
-        if active_state.get_self_representation().stable:
+        if active_state.get_self_representation().stable and active_representation.stable:
             active_state.add_active_state_relevance(active_state_relevance)
         return in_drift, in_warning, active_state_relevance
 

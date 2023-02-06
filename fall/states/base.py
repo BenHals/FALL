@@ -17,7 +17,30 @@ from fall.utils import Observation
 
 
 class State:  # pylint: disable=too-few-public-methods
-    """A base state containing a Classifier and ConceptRepresentation"""
+    """A base state containing a Classifier and ConceptRepresentation.
+
+    Parameters
+
+    classifier: Classifier
+        - The base classifier to use for prediction.
+
+    representation_constructor: Callable[[int], ConceptRepresentation]
+        - A function used to generate a new concept representation
+
+    state_id: int
+        - The id of the state. Should be positive and unique
+        (The ID -1 is reserved for the background state)
+
+    train_representation: bool
+        - A flag for enabling or disabling training the concept representation.
+        Some concept representations may not be trained, e.g., the error rate.
+
+    in_concept_relevance_memory_size: int
+        - How many observations of the relevance recorded within the associated concept
+        should be stored. Higher may give a more accurate distribution, but we may also
+        want to drop early records which are no longer comparable due to changes to weighting
+
+    """
 
     def __init__(
         self,
@@ -25,6 +48,7 @@ class State:  # pylint: disable=too-few-public-methods
         representation_constructor: Callable[[int], ConceptRepresentation],
         state_id: int = -1,
         train_representation: bool = True,
+        in_concept_relevance_memory_size: int = 10,
     ) -> None:
         self.state_id = state_id
         self.name = str(self.state_id)
@@ -35,6 +59,7 @@ class State:  # pylint: disable=too-few-public-methods
             self.state_id: self.representation_constructor(self.state_id)
         }
         self.train_representation = train_representation
+        self.in_concept_relevance_memory_size = in_concept_relevance_memory_size
 
         self.seen_weight = 0.0
         self.active_seen_weight = 0.0
@@ -53,7 +78,9 @@ class State:  # pylint: disable=too-few-public-methods
 
         # We track the states relevance while active in the same way, and also record a distribution.
         self.in_concept_relevance_record = ADWIN()
-        self.in_concept_relevance_distribution: BaseDistribution = GaussianDistribution()
+        self.in_concept_relevance_distribution: BaseDistribution = GaussianDistribution(
+            memory_size=self.in_concept_relevance_memory_size
+        )
 
         # We finally track a recent relevance.
         self.current_relevance_record = ADWIN()
