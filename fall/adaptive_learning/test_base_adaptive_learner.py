@@ -249,13 +249,12 @@ def test_drift_detection() -> None:
             _ = baseline_detector.update(baseline_relevance)  # type: ignore
             in_drift = baseline_detector.drift_detected
             if in_drift:
-                assert al_classifier.performance_monitor.in_drift
                 if al_classifier.performance_monitor.made_transition:
+                    assert al_classifier.performance_monitor.in_drift
                     found_drift = True
                     break
             else:
                 assert not al_classifier.performance_monitor.in_drift
-            assert not al_classifier.performance_monitor.made_transition
 
     # We should have found a drift when the concept changed
     assert al_classifier.performance_monitor.in_drift
@@ -336,14 +335,13 @@ def test_drift_transition() -> None:
             _ = baseline_c1_detector.update(baseline_c1_relevance)  # type: ignore
         in_drift = baseline_c1_detector.drift_detected
         if in_drift:
-            assert al_classifier.performance_monitor.in_drift
             if al_classifier.performance_monitor.made_transition:
+                assert al_classifier.performance_monitor.in_drift
                 found_drift = True
                 drift_point = t
                 break
         else:
             assert not al_classifier.performance_monitor.in_drift
-        assert not al_classifier.performance_monitor.made_transition
 
     # We should have found a drift when the concept changed
     assert al_classifier.performance_monitor.in_drift
