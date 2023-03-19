@@ -253,8 +253,8 @@ def test_drift_detection() -> None:
                 if al_classifier.performance_monitor.made_transition:
                     found_drift = True
                     break
-
-            assert not al_classifier.performance_monitor.in_drift
+            else:
+                assert not al_classifier.performance_monitor.in_drift
             assert not al_classifier.performance_monitor.made_transition
 
     # We should have found a drift when the concept changed
@@ -341,8 +341,8 @@ def test_drift_transition() -> None:
                 found_drift = True
                 drift_point = t
                 break
-
-        assert not al_classifier.performance_monitor.in_drift
+        else:
+            assert not al_classifier.performance_monitor.in_drift
         assert not al_classifier.performance_monitor.made_transition
 
     # We should have found a drift when the concept changed
