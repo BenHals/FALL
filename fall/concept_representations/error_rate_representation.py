@@ -5,6 +5,7 @@ from river.stats import Mean
 from fall.concept_representations import ConceptRepresentation
 
 from .meta_feature_distributions import GaussianDistribution
+from .normalizer import MetaFeatureNormalizer
 
 
 class ErrorRateRepresentation(ConceptRepresentation):
@@ -13,17 +14,28 @@ class ErrorRateRepresentation(ConceptRepresentation):
     With zero observations, we default to an error rate of 0.0 to represent maximum performance.
     This is a common (implied) comparison target when testing error_rate."""
 
-    def __init__(self, window_size: int, concept_id: int, mode: str = "active", update_period: int = 1):
-        super().__init__(window_size, concept_id, mode, update_period)
+    def __init__(
+        self,
+        window_size: int,
+        concept_id: int,
+        normalizer: MetaFeatureNormalizer,
+        mode: str = "active",
+        update_period: int = 1,
+    ):
+        super().__init__(window_size, concept_id, normalizer, mode, update_period)
         self.window_error_rate = Mean()
         self.meta_feature_values = [0.0]
+        self.classifier_meta_feature_indexs = [0]
         # for active we want to remember only updates over the last window
         # otherwise, we want to remember all updates.
         self.meta_feature_distributions = [GaussianDistribution(memory_size=1 if mode == "active" else -1)]
+        self.normalize = False
 
     def update_supervised(self) -> None:
         while self.new_supervised:
             new_sup_ob = self.new_supervised.popleft()
+            if not self.initialized:
+                self.initialize(new_sup_ob)
             new_is_correct = new_sup_ob.predictions[self.concept_id] == new_sup_ob.y
             self.window_error_rate.update(0 if new_is_correct else 1)
             if len(self.supervised_window) >= self.window_size:
@@ -45,7 +57,6 @@ class ErrorRateRepresentation(ConceptRepresentation):
         avg_error_rate = fingerprint[0]
         self.meta_feature_distributions[0].learn_one(avg_error_rate)
         self.meta_feature_values[0] = self.meta_feature_distributions[0].mean
-
         return self.meta_feature_values
 
     def update_unsupervised(self) -> None:

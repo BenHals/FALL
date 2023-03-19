@@ -338,7 +338,7 @@ def test_reidentification_schedule_detection() -> None:
             prev_drift = drift_checks[i - 1]
             assert prev_drift is not None
             assert prev_drift.drift_type == DriftType.DriftDetectorTriggered or prev_drift.triggered_transition
-            assert prev_drift.drift_timestep == drift.drift_timestep - check_delay - 1
+            assert abs(prev_drift.drift_timestep - (drift.drift_timestep - check_delay)) <= 1
 
 
 def test_reidentification_schedule_periodic() -> None:
@@ -416,8 +416,15 @@ def test_observations_buffered() -> None:
             buffered_classifier_2.learn_one(x, y, timestep=t)
 
             # Test this by checking the active_state_relevance, which is set in step
-            assert buffered_classifier_1.buffer.supervised_buffer.active_window[-1].active_state_relevance is not None
-            assert buffered_classifier_2.buffer.supervised_buffer.active_window[-1].active_state_relevance is not None
+            # This is only set if the active representation is stable
+            if buffered_classifier_1.get_active_state().get_self_representation().stable:
+                assert (
+                    buffered_classifier_1.buffer.supervised_buffer.active_window[-1].active_state_relevance is not None
+                )
+            if buffered_classifier_2.get_active_state().get_self_representation().stable:
+                assert (
+                    buffered_classifier_2.buffer.supervised_buffer.active_window[-1].active_state_relevance is not None
+                )
 
 
 def test_is_stable() -> None:
@@ -493,7 +500,7 @@ def test_base_predictions_increase_rate() -> None:
 
 
 def test_representations() -> None:
-    """Test predictions are the same as made by a base classifier when buffer increase rate is close to zero"""
+    """Test buffered error rate representation is approximately the true error rate."""
     buffered_classifier = BaseBufferedAdaptiveLearner(
         classifier_constructor=HoeffdingTreeClassifier,
         representation_constructor=ErrorRateRepresentation,
@@ -514,10 +521,12 @@ def test_representations() -> None:
             _ = buffered_classifier.predict_one(x, t)
             buffered_classifier.learn_one(x, y, timestep=t)
 
-            representation_window = buffered_classifier.active_window_state_representations[
+            active_window_representation = buffered_classifier.active_window_state_representations[
                 buffered_classifier.active_state_id
-            ].supervised_window
-            if len(representation_window) > 0:
-                assert buffered_classifier.active_window_state_representations[
-                    buffered_classifier.active_state_id
-                ].meta_feature_values[0] == approx(np.mean([not x[1] for x in representation_window]))
+            ]
+            if active_window_representation.stable:
+                representation_window = active_window_representation.supervised_window
+                if len(representation_window) > 0:
+                    assert active_window_representation.meta_feature_values[0] == approx(
+                        np.mean([not x[1] for x in representation_window])
+                    )

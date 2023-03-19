@@ -79,7 +79,7 @@ def plot_tm(
     active_state_id: int,
     T: TransitionFSM,
     repository: dict[int, Any],
-    concept_colors: list[str],
+    concept_colors: list[tuple[float, float, float, float]],
     c_init: int,
 ) -> None:
     G = nx.DiGraph()
@@ -128,6 +128,8 @@ class Monitor:
         self.sys_colors: deque[Any] = deque(maxlen=self.history_len)
         self.sys_nomr_segments: deque[Any] = deque(maxlen=self.history_len)
         self.sys_nomr_colors: deque[Any] = deque(maxlen=self.history_len)
+        self.evolution_history: deque[bool] = deque(maxlen=self.history_len)
+        self.evolution_segments: deque[Any] = deque(maxlen=self.history_len)
         self.recall = 0.0
         self.precision = 0.0
         self.F1 = 0.0
@@ -160,12 +162,13 @@ class Monitor:
         sys_lc: Any,
         sys_nomr_lc: Any,
         likelihood_lc: Any,
+        evolutions_lc: Any,
         text_obs: Any,
         flush: bool = False,
         updates_per_frame: int = 1,
         pbar: Optional[tqdm] = None,
     ) -> list[Any]:
-        for update_frame in range(updates_per_frame):
+        for _ in range(updates_per_frame):
             X, y = next(stream_iter)
             if X is not None:
                 self.ex += 1
@@ -263,6 +266,14 @@ class Monitor:
 
                 classifier.learn_one(X, y)
                 classifier_baseline.learn_one(X, y)
+
+                self.evolution_history.append(perf_monitor.active_state_evolved)
+
+                self.evolution_segments = deque(maxlen=self.history_len)
+                for evo, x in zip(self.evolution_history, self.x_history):
+                    if evo:
+                        self.evolution_segments.append([[x, 0], [x, 1]])
+
             self.sample_count += 1
             if self.sample_count >= self.drift_count:
                 self.current_concept += 1
@@ -349,6 +360,7 @@ class Monitor:
             sys_nomr_lc.set_color(self.sys_nomr_colors)
             likelihood_lc.set_segments(self.likelihood_segments)
             likelihood_lc.set_color(self.likelihood_segment_colors)
+            evolutions_lc.set_segments(self.evolution_segments)
         artists = [
             im,
             acc_line,
@@ -358,6 +370,7 @@ class Monitor:
             sys_lc,
             sys_nomr_lc,
             likelihood_lc,
+            evolutions_lc,
             *text_obs.values(),
         ]
 
@@ -493,6 +506,9 @@ class Monitor:
         sys_nomr_lc = LineCollection(self.sys_segments)
         sys_nomr_lc.set_linewidth(2)
         self.ax3.add_collection(sys_nomr_lc)
+        evolutions_lc = LineCollection(self.evolution_segments)
+        evolutions_lc.set_linewidth(2)
+        self.ax2.add_collection(evolutions_lc)
 
         likelihood_lc = LineCollection(self.gt_segments)
         likelihood_lc.set_linewidth(2)
@@ -556,6 +572,7 @@ class Monitor:
                 sys_lc,
                 sys_nomr_lc,
                 likelihood_lc,
+                evolutions_lc,
                 text_obs,
                 False,
                 updates_per_frame,

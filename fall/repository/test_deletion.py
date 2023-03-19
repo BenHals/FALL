@@ -1,14 +1,15 @@
 from river.tree import HoeffdingTreeClassifier
 
-from fall.concept_representations import ErrorRateRepresentation
+from fall.concept_representations import ErrorRateRepresentation, MetaFeatureNormalizer
 from fall.repository import Repository, ValuationPolicy
 
 
 def test_fifo_policy() -> None:
     """Test FIFO policy, should delete oldest state"""
+    normalizer = MetaFeatureNormalizer()
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id, normalizer),
         valuation_policy=ValuationPolicy.FIFO,
     )
     s1 = repo.add_next_state()
@@ -47,9 +48,10 @@ def test_fifo_policy() -> None:
 
 def test_lru_policy() -> None:
     """Test LRU policy, should delete least recently used state"""
+    normalizer = MetaFeatureNormalizer()
     repo = Repository(
         classifier_constructor=HoeffdingTreeClassifier,
-        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id),
+        representation_constructor=lambda state_id: ErrorRateRepresentation(1, state_id, normalizer),
         valuation_policy=ValuationPolicy.LRU,
     )
     s1 = repo.add_next_state()

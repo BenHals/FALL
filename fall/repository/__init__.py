@@ -9,7 +9,14 @@ constructed states and their memory management.
 """
 
 from .base import Repository, ValuationPolicy
-from .comparers import AbsoluteValueComparer, RepresentationComparer
+from .comparers import AbsoluteValueComparer, CosineComparer, RepresentationComparer
 from .transition_fsm import TransitionFSM
 
-__all__ = ["TransitionFSM", "Repository", "ValuationPolicy", "RepresentationComparer", "AbsoluteValueComparer"]
+__all__ = [
+    "TransitionFSM",
+    "Repository",
+    "ValuationPolicy",
+    "RepresentationComparer",
+    "AbsoluteValueComparer",
+    "CosineComparer",
+]

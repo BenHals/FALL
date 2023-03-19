@@ -18,7 +18,7 @@ from fall.adaptive_learning.reidentification_schedulers import (
     DriftType,
     ReidentificationSchedule,
 )
-from fall.concept_representations import ConceptRepresentation
+from fall.concept_representations import ConceptRepresentation, MetaFeatureNormalizer
 from fall.data.utils import StateSegment
 from fall.repository import (
     Repository,
@@ -54,6 +54,8 @@ class PerformanceMonitor:
 
         self.current_active_state_segment = StateSegment(0, -1, 1, initial_active_state_id)
         self.active_state_history: list[StateSegment] = [self.current_active_state_segment]
+
+        self.active_state_evolved = False
 
     def step_reset(self, initial_active_state: State) -> None:
         """Reset monitoring on taking a new step."""
@@ -124,7 +126,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def __init__(
         self,
         classifier_constructor: Callable[[], Classifier],
-        representation_constructor: Callable[[int, int, str, int], ConceptRepresentation],
+        representation_constructor: Callable[[int, int, MetaFeatureNormalizer, str, int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,
@@ -217,11 +219,13 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         self.max_size = max_size
         self.valuation_policy = valuation_policy
         self.classifier_constructor = classifier_constructor
+        # The normalizer captures the observed distribution of meta-features.
+        self.normalizer = MetaFeatureNormalizer()
         self.active_representation_constructor = lambda state_id: representation_constructor(
-            representation_window_size, state_id, "active", representation_update_period
+            representation_window_size, state_id, self.normalizer, "active", representation_update_period
         )
         self.concept_representation_constructor = lambda state_id: representation_constructor(
-            representation_window_size, state_id, "concept", representation_update_period
+            representation_window_size, state_id, self.normalizer, "concept", representation_update_period
         )
         self.representation_comparer = representation_comparer
         self.drift_detector_constructor = drift_detector_constructor
@@ -340,12 +344,19 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         for _, representation in self.active_window_state_representations.items():
             representation.predict_one(unsupervised_observation)
 
-        self.representation_comparer.train_unsupervised(self.repository)
+        self.representation_comparer.train_unsupervised(self.repository, self.normalizer)
         self.unsupervised_active_window.append(unsupervised_observation)
 
         self.unsupervised_timestep += 1
 
-    def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0, timestep: Optional[int] = None) -> None:
+    def learn_one(
+        self,
+        x: dict,
+        y: ClfTarget,
+        sample_weight: float = 1.0,
+        timestep: Optional[int] = None,
+        true_concept_idx: Optional[int] = None,
+    ) -> None:
         active_state = self.get_active_state()
 
         supervised_observation = Observation(
@@ -365,7 +376,10 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         trainable_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
         for state in trainable_states:
             state.learn_one(supervised_observation)
+        self.representation_comparer.train_supervised(self.repository, self.normalizer)
+
         self.performance_monitor.last_trained_observation = supervised_observation
+        self.performance_monitor.active_state_evolved = self.get_active_state().evolved_at_last_update
 
         self.step(supervised_observation)
 
@@ -390,30 +404,53 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         for _, representation in self.active_window_state_representations.items():
             representation.learn_one(supervised_observation)
 
-        self.representation_comparer.train_supervised(self.repository)
         self.supervised_active_window.append(supervised_observation)
         self.supervised_timestep += 1
 
     def step(self, observation: Observation) -> None:
         """Update internal state"""
         active_state = self.get_active_state()
-        self.performance_monitor.step_reset(active_state)
 
+        # Apply logic to handle classifier evolution
+        if active_state.evolved_at_last_update:
+            active_state.concept_representation[active_state.state_id].handle_classifier_evolution()
+
+        self.performance_monitor.step_reset(active_state)
         self.performance_monitor.last_observation = observation
 
         # Update state statistics
         self.repository.step_all(self.active_state_id)
 
+        if not self.normalizer.initialized or not active_state.get_self_representation().stable:
+            self.performance_monitor.set_final_active_state(self.get_active_state())
+            return
+
         in_drift, in_warning, active_state_relevance = self.active_state_drift_detection()
         observation.add_active_state_relevance(active_state_relevance, self.active_state_id)
         # if the observation is stable then we already trained on it, so we should add
         # relevance now.
-        if observation.is_stable:
+        if observation.is_stable and active_state.get_self_representation().stable:
             active_state.add_active_state_relevance(active_state_relevance)
         self.performance_monitor.in_drift = in_drift
         self.performance_monitor.in_warning = in_warning
         self.performance_monitor.active_state_last_relevance = active_state_relevance
         self.performance_monitor.state_relevances[active_state.state_id] = active_state.get_in_concept_relevance()
+
+        if self.construct_pair_representations:
+            for state_id, state in self.repository.states.items():
+                if state_id == active_state.state_id:
+                    continue
+                active_representation = self.active_window_state_representations.setdefault(
+                    state_id, self.construct_active_representation(state)
+                )
+                self.performance_monitor.state_relevances[
+                    state_id
+                ] = self.representation_comparer.get_state_rep_similarity(state, active_representation)
+
+        # # If we just transitioned, we have some grace period before checking for drift
+        # if active_state.seen_weight_since_active < active_state.get_self_representation().window_size * 2:
+        #     self.performance_monitor.set_final_active_state(self.get_active_state())
+        #     return
 
         # Check if we need to perform reidentification
         # either from a scheduled check for from a drift detection.
@@ -429,7 +466,6 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # Schedule any new re-identification checks.
         for drift in step_reidentification_checks:
             self.reidentification_schedule.schedule_reidentification(drift)
-
         if len(step_reidentification_checks) > 0:
             # We always use the drift detector drift if availiable, or the newest scheduled drift if not.
             # This is based on the order, where scheduled drifts are expected to be ordered by time
@@ -495,7 +531,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         in_drift, in_warning, active_state_relevance = self.perform_drift_detection(
             active_state, active_representation, self.drift_detector
         )
-        active_state.add_active_state_relevance(active_state_relevance)
+        if active_state.get_self_representation().stable and active_representation.stable:
+            active_state.add_active_state_relevance(active_state_relevance)
         return in_drift, in_warning, active_state_relevance
 
     def perform_drift_detection(
@@ -521,6 +558,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         state_relevance = self.representation_comparer.get_state_rep_similarity(state, state_representation)
 
         _ = drift_detector.update(state_relevance)  # type: ignore
+
         in_drift = drift_detector.drift_detected
         in_warning = False
         # turn off detections which do not match mode
@@ -560,7 +598,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
                     continue
                 supervised_timesteps.add(observation.seen_at)
                 with pure_inference_mode():
-                    _ = state.predict_one(observation)
+                    if state.state_id not in observation.predictions:
+                        _ = state.predict_one(observation)
                     representation.predict_one(observation)
                 representation.learn_one(observation)
 
@@ -627,6 +666,7 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
     def transition_active_state(self, next_active_state: State, in_drift: bool, in_warning: bool) -> None:
         """Transition to an active state in the repository."""
         current_active_state = self.get_active_state()
+        current_active_state.transition_from()
         self.active_state_id = next_active_state.state_id
         self.repository.add_transition(
             current_active_state, next_active_state, in_drift=in_drift, in_warning=in_warning
@@ -687,7 +727,7 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
     def __init__(
         self,
         classifier_constructor: Callable[[], Classifier],
-        representation_constructor: Callable[[int, int, str, int], ConceptRepresentation],
+        representation_constructor: Callable[[int, int, MetaFeatureNormalizer, str, int], ConceptRepresentation],
         representation_comparer: RepresentationComparer,
         drift_detector_constructor: Callable[[], DriftDetector],
         representation_update_period: int = 1,
@@ -822,7 +862,14 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
 
         return p
 
-    def learn_one(self, x: dict, y: ClfTarget, sample_weight: float = 1.0, timestep: Optional[int] = None) -> None:
+    def learn_one(
+        self,
+        x: dict,
+        y: ClfTarget,
+        sample_weight: float = 1.0,
+        timestep: Optional[int] = None,
+        true_concept_idx: Optional[int] = None,
+    ) -> None:
         self.performance_monitor.buffer_step_reset(self.active_state_id)
 
         active_state = self.get_active_state()
@@ -861,7 +908,10 @@ class BaseBufferedAdaptiveLearner(BaseAdaptiveLearner):
             trained_states = self.repository.states.values() if self.construct_pair_representations else [active_state]
             for state in trained_states:
                 state.learn_one(stable_observation)
+            self.representation_comparer.train_supervised(self.repository, self.normalizer)
+
             self.performance_monitor.last_trained_observation = stable_observation
+            self.performance_monitor.active_state_evolved = self.get_active_state().evolved_at_last_update
 
         self.step(supervised_observation)
 

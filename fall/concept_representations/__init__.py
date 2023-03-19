@@ -7,18 +7,22 @@ online."""
 
 from .base import ConceptRepresentation
 from .error_rate_representation import ErrorRateRepresentation
+from .fingerprint_representation import FingerprintRepresentation
 from .meta_feature_distributions import (
     BaseDistribution,
     DistributionTypes,
     GaussianDistribution,
     SingleValueDistribution,
 )
+from .normalizer import MetaFeatureNormalizer
 
 __all__ = [
     "ConceptRepresentation",
     "ErrorRateRepresentation",
+    "FingerprintRepresentation",
     "DistributionTypes",
     "BaseDistribution",
     "SingleValueDistribution",
     "GaussianDistribution",
+    "MetaFeatureNormalizer",
 ]

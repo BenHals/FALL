@@ -1,7 +1,7 @@
 from river.datasets import synth
 from river.tree import HoeffdingTreeClassifier
 
-from fall.concept_representations import ErrorRateRepresentation
+from fall.concept_representations import ErrorRateRepresentation, MetaFeatureNormalizer
 from fall.states import State
 from fall.utils import Observation
 
@@ -9,8 +9,8 @@ from fall.utils import Observation
 def test_classifier_equivalence() -> None:
     """Calling predict_one and learn_one on a state
     should be equivalent to calling directly on the underlying state."""
-
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id))
+    normalizer = MetaFeatureNormalizer()
+    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id, normalizer))
     base_classifier = HoeffdingTreeClassifier()
     preds = []
     for t, (x, y) in enumerate(synth.STAGGER().take(100)):
@@ -29,8 +29,10 @@ def test_classifier_inactive() -> None:
     """Calling predict_one and learn_one on a state
     should be equivalent to calling directly on the underlying state.
     Since the state is not active, the classifier should not train."""
-
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id), state_id=1)
+    normalizer = MetaFeatureNormalizer()
+    state = State(
+        HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id, normalizer), state_id=1
+    )
     base_classifier = HoeffdingTreeClassifier()
     preds = []
     for t, (x, y) in enumerate(synth.STAGGER().take(100)):
@@ -52,8 +54,10 @@ def test_classifier_inactive_force() -> None:
     """Calling predict_one and learn_one on a state
     should be equivalent to calling directly on the underlying state.
     Since the state is not active, but training is forced, the classifier should train."""
-
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id), state_id=1)
+    normalizer = MetaFeatureNormalizer()
+    state = State(
+        HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(1, state_id, normalizer), state_id=1
+    )
     base_classifier = HoeffdingTreeClassifier()
     preds = []
     for t, (x, y) in enumerate(synth.STAGGER().take(100)):
@@ -75,9 +79,9 @@ def test_classifier_inactive_force() -> None:
 def test_representation_equivalence() -> None:
     """Calling predict_one and learn_one on a state
     should be equivalent to calling directly on the underlying concept_representaion."""
-
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id))
-    base_representation = ErrorRateRepresentation(5, 5)
+    normalizer = MetaFeatureNormalizer()
+    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id, normalizer))
+    base_representation = ErrorRateRepresentation(5, 5, normalizer)
     preds = []
     for t, (x, y) in enumerate(synth.STAGGER().take(100)):
         ob = Observation(x, y, t, state.state_id)
@@ -94,10 +98,12 @@ def test_representation_equivalence() -> None:
 def test_representation_equivalence_inactive() -> None:
     """Calling predict_one and learn_one on a state when it is unactive.
     should be equivalent to calling directly on the underlying concept_representaion."""
-
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id), state_id=1)
-    base_representation = ErrorRateRepresentation(5, 5)
-    base_representation_trained = ErrorRateRepresentation(5, 5)
+    normalizer = MetaFeatureNormalizer()
+    state = State(
+        HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id, normalizer), state_id=1
+    )
+    base_representation = ErrorRateRepresentation(5, 5, normalizer)
+    base_representation_trained = ErrorRateRepresentation(5, 5, normalizer)
     preds = []
     for t, (x, y) in enumerate(synth.STAGGER().take(100)):
         active_state_id = -1
@@ -122,10 +128,12 @@ def test_representation_equivalence_inactive() -> None:
 def test_representation_equivalence_inactive_forced() -> None:
     """Calling predict_one and learn_one on a state when it is unactive.
     should be equivalent to calling directly on the underlying concept_representaion."""
-
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id), state_id=1)
-    base_representation = ErrorRateRepresentation(5, 5)
-    base_representation_trained = ErrorRateRepresentation(5, 5)
+    normalizer = MetaFeatureNormalizer()
+    state = State(
+        HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id, normalizer), state_id=1
+    )
+    base_representation = ErrorRateRepresentation(5, 5, normalizer)
+    base_representation_trained = ErrorRateRepresentation(5, 5, normalizer)
     preds = []
     for t, (x, y) in enumerate(synth.STAGGER().take(100)):
         active_state_id = -1
@@ -153,8 +161,9 @@ def test_representation_notrain() -> None:
     """Calling predict_one and learn_one on a state
     should not update the representation if disabled."""
     # Test that we can dynamically disable
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id))
-    base_representation = ErrorRateRepresentation(5, 5)
+    normalizer = MetaFeatureNormalizer()
+    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id, normalizer))
+    base_representation = ErrorRateRepresentation(5, 5, normalizer)
     preds = []
     disable_rep = False
     for i, (x, y) in enumerate(synth.STAGGER().take(100)):
@@ -173,8 +182,9 @@ def test_representation_notrain() -> None:
     assert all(p[0] == p[1] for p in preds)
 
     # Test that we can disable at start
-    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id))
-    base_representation = ErrorRateRepresentation(5, 5)
+    normalizer = MetaFeatureNormalizer()
+    state = State(HoeffdingTreeClassifier(), lambda state_id: ErrorRateRepresentation(5, state_id, normalizer))
+    base_representation = ErrorRateRepresentation(5, 5, normalizer)
     preds = []
     disable_rep = True
     state.deactivate_train_representation()

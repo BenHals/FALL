@@ -1,18 +1,27 @@
+import matplotlib.animation
+import matplotlib.pyplot as plt
 from river.drift.adwin import ADWIN
 from river.tree.hoeffding_tree_classifier import HoeffdingTreeClassifier
-import matplotlib.pyplot as plt
-import matplotlib.animation
 
-from fall.adaptive_learning.base import BaseBufferedAdaptiveLearner
-from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
-from fall.concept_representations import ErrorRateRepresentation
+from fall.adaptive_learning.base import (
+    BaseBufferedAdaptiveLearner,
+    get_increasing_buffer_scheduler,
+)
+
+# from fall.adaptive_learning.reidentification_schedulers import DriftDetectionCheck
+from fall.classifiers import EvolutionHoeffdingTree
+from fall.concept_representations import (  # ErrorRateRepresentation,
+    FingerprintRepresentation,
+)
 from fall.data.datastream import ConceptSegmentDataStream, make_stream_concepts
 from fall.data.synthetic.wind_sim import WindSimGenerator
 from fall.data.transition_patterns import circular_transition_pattern
 from fall.data.utils import Concept
 from fall.evaluation.monitoring import Monitor
-from fall.repository import AbsoluteValueComparer
-
+from fall.metafeature_weighting.weighting_functions import (  # random_weighting,
+    fisher_overall_weighting,
+)
+from fall.repository import CosineComparer  # AbsoluteValueComparer,
 
 seed = 42
 s0 = WindSimGenerator(concept=3, sample_random_state_init=seed)
@@ -33,14 +42,20 @@ concept_segments = make_stream_concepts([c0, c1, c2, c3], pattern, segment_lengt
 datastream = ConceptSegmentDataStream(concept_segments, 0, seed)
 
 classifier = BaseBufferedAdaptiveLearner(
-    classifier_constructor=lambda: HoeffdingTreeClassifier(grace_period=50),
-    representation_constructor=ErrorRateRepresentation,
-    train_representation=False,
-    representation_comparer=AbsoluteValueComparer(),
-    drift_detector_constructor=lambda: ADWIN(delta=0.0002),
-    representation_window_size=50,
-    representation_update_period=1,
-    reidentification_check_schedulers=[DriftDetectionCheck(100)],
+    classifier_constructor=lambda: EvolutionHoeffdingTree(grace_period=50),
+    buffer_timeout_max=250,
+    buffer_timeout_scheduler=get_increasing_buffer_scheduler(0.5),
+    # representation_constructor=ErrorRateRepresentation,
+    representation_constructor=FingerprintRepresentation,
+    train_representation=True,
+    construct_pair_representations=True,
+    prediction_mode="all",
+    # representation_comparer=AbsoluteValueComparer(),
+    representation_comparer=CosineComparer(fisher_overall_weighting, weight_coef=0.1),
+    drift_detector_constructor=lambda: ADWIN(delta=0.002),
+    representation_window_size=20,
+    representation_update_period=5,
+    reidentification_check_schedulers=[],
     background_state_mode=None,
     drift_detection_mode="lower",
 )
@@ -53,7 +68,7 @@ if __name__ == "__main__":
     print(datastream)
 
     monitor = Monitor(figsize=(12, 8))
-    save = True
+    save = False
     if save:
         ani = monitor.run_monitor(
             datastream, classifier, baseline, interval=1, updates_per_frame=1, total_n_frames=100

@@ -178,7 +178,7 @@ class ConceptSegmentDataStream(Dataset):
         current_segment = self.get_current_concept()
         return current_segment.get_last_image()
 
-    def __iter__(self) -> Iterator[Tuple[int, int]]:
+    def __iter__(self) -> Iterator[Tuple[dict[str, float], int]]:
         rng = check_random_state(self.seed)
         stream_iterators = {seg.concept.name: iter(seg.concept.data) for seg in self.concept_segments}
 

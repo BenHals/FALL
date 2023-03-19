@@ -9,12 +9,20 @@ from river.base import Base
 from fall.utils import Observation
 
 from .meta_feature_distributions import BaseDistribution, DistributionTypes
+from .normalizer import MetaFeatureNormalizer
 
 
 class ConceptRepresentation(Base, abc.ABC):
     """A base concept representation."""
 
-    def __init__(self, window_size: int, concept_id: int, mode: str = "active", update_period: int = 1) -> None:
+    def __init__(
+        self,
+        window_size: int,
+        concept_id: int,
+        normalizer: MetaFeatureNormalizer,
+        mode: str = "active",
+        update_period: int = 1,
+    ) -> None:
         """
         Parameters
         ----------
@@ -49,10 +57,12 @@ class ConceptRepresentation(Base, abc.ABC):
         """
         self.window_size: int = window_size
         self.concept_id = concept_id
+        self.normalizer = normalizer
         self.mode: str = mode
         self.update_period: int = update_period
         self.update_on_supervised: bool = True
         self.update_on_unsupervised: bool = False
+        self.normalize: bool = True
 
         self.updates_per_window = window_size // update_period
 
@@ -67,12 +77,24 @@ class ConceptRepresentation(Base, abc.ABC):
         self.last_unsupervised_update = -1.0
         self.last_supervised_concept_update = -1.0
         self.last_unsupervised_concept_update = -1.0
+        self.last_classifier_evolution_timestep = -1.0
 
         # A concept representation represents a concept as a finite set of values, or meta-features
         self.meta_feature_values: List[float] = []
+        self.classifier_meta_feature_indexs: list[int] = []
 
         # Each meta-feature has a distribution across a concept.
         self.meta_feature_distributions: List[BaseDistribution] = []
+
+        # We may need to initialize after seeing an observation to learn correct dimensions
+        self.initialized = False
+
+    def initialize(self, observation: Observation) -> None:
+        self.initialized = True
+
+    @property
+    def stable(self) -> bool:
+        return len(self.supervised_window) >= self.window_size
 
     def learn_one(self, supervised_observation: Observation) -> None:
         """Update a concept representation with a single observation drawn from a concept,
@@ -83,9 +105,9 @@ class ConceptRepresentation(Base, abc.ABC):
 
         # If required, extract a fingerprint and use it to update the concept
         if self.update_on_supervised:
-            if self.last_supervised_update >= self.last_supervised_concept_update + self.update_period:
+            if self.last_supervised_update >= self.last_supervised_concept_update + self.update_period and self.stable:
                 current_fingerprint = self.extract_fingerprint()
-                print(current_fingerprint, not current_fingerprint[0])
+                self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)
                 self.last_supervised_concept_update = self.last_supervised_update
 
@@ -98,10 +120,38 @@ class ConceptRepresentation(Base, abc.ABC):
 
         # If required, extract a fingerprint and use it to update the concept
         if self.update_on_unsupervised:
-            if self.last_unsupervised_update >= self.last_unsupervised_concept_update + self.update_period:
+            if (
+                self.last_unsupervised_update >= self.last_unsupervised_concept_update + self.update_period
+                and self.stable
+            ):
                 current_fingerprint = self.extract_fingerprint()
+                self.normalizer.learn_one(current_fingerprint)
                 self.integrate_fingerprint(current_fingerprint)
                 self.last_unsupervised_concept_update = self.last_unsupervised_update
+
+    def overall_normalize(self, meta_features: list[float]) -> list[float]:
+        """Min max normalize using the global distribution."""
+        return self.normalizer.min_max_normalize(meta_features)
+
+    def overall_standardize(self, meta_features: list[float]) -> list[float]:
+        """Standardize using the global distribution."""
+        return self.normalizer.standardize(meta_features)
+
+    def local_normalize(self, meta_features: list[float]) -> list[float]:
+        """Min max normalize using the local distribution."""
+        transformed_meta_features = []
+        for i, mf in enumerate(meta_features):
+            transformed_meta_features.append(self.meta_feature_distributions[i].min_max_normalize(mf))
+
+        return transformed_meta_features
+
+    def local_standardize(self, meta_features: list[float]) -> list[float]:
+        """Standardize using the local distribution."""
+        transformed_meta_features = []
+        for i, mf in enumerate(meta_features):
+            transformed_meta_features.append(self.meta_feature_distributions[i].standardize(mf))
+
+        return transformed_meta_features
 
     @abc.abstractmethod
     def update_supervised(self) -> None:
@@ -130,6 +180,25 @@ class ConceptRepresentation(Base, abc.ABC):
         """Return a single value describing each meta-feature in the representation.
         Returned as a vector, even for single meta-feature representations."""
 
+    def get_weight_prior(self) -> List[float]:
+        """Get priors for meta-feature weights."""
+        weight_priors = [1.0] * len(self.meta_feature_values)
+
+        # Reduce weight on supervised meta-features for a period after an evolution
+        # Both values start as negative, so if both are positive then the classifier has updated these values
+        has_had_updates = (self.last_supervised_concept_update > 0) and (self.last_classifier_evolution_timestep > 0)
+        time_since_last_evolution = self.last_supervised_concept_update - self.last_classifier_evolution_timestep
+        if has_had_updates and time_since_last_evolution < self.window_size * 2:
+            for i in self.classifier_meta_feature_indexs:
+                weight_priors[i] = time_since_last_evolution / self.window_size * 2
+
+        return weight_priors
+
+    def handle_classifier_evolution(self) -> None:
+        """Handle changes in behaviour due to a classifier evolution.
+        For example, supervised meta-features may need to be reset."""
+        self.last_classifier_evolution_timestep = self.supervised_timestep
+
     @property
     def _vector(self) -> bool:
         """Whether or not a vector concept representation is stored.
@@ -141,3 +210,11 @@ class ConceptRepresentation(Base, abc.ABC):
         """The format in which distributional information is stored
         Determines which feature selection methods may be used."""
         return DistributionTypes(0)
+
+    @property
+    def counts(self) -> list[int]:
+        return [d.count for d in self.meta_feature_distributions]
+
+    @property
+    def stdevs(self) -> list[float]:
+        return [d.stdev for d in self.meta_feature_distributions]

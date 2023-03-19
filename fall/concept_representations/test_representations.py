@@ -3,6 +3,7 @@ import numpy as np
 
 from fall.concept_representations.error_rate_representation import (
     ErrorRateRepresentation,
+    MetaFeatureNormalizer,
 )
 from fall.utils import Observation
 
@@ -18,9 +19,10 @@ def test_error_rate_representation() -> None:
     y_vals = [0, 0, 1, 0, 1, 1, 1, 0]
     p_vals = [1, 0, 1, 0, 1, 0, 0, 1]
     concept_id = 0
-    rep_1 = ErrorRateRepresentation(1, concept_id)
+    normalizer = MetaFeatureNormalizer()
+    rep_1 = ErrorRateRepresentation(1, concept_id, normalizer)
     rep_1_vals = []
-    rep_5 = ErrorRateRepresentation(5, concept_id, mode="active")
+    rep_5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="active")
     rep_5_vals = []
     for t, (y, p) in enumerate(zip(y_vals, p_vals)):
         ob = Observation(x={}, y=y, seen_at=t, active_state_id=concept_id)
@@ -35,7 +37,9 @@ def test_error_rate_representation() -> None:
     print(rep_1_vals)
     print(rep_5_vals)
     assert rep_1_vals == [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
-    np.testing.assert_almost_equal(rep_5_vals, [0.0, 1 / 1, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 5, 2 / 5, 3 / 5])
+    # True values: [0.0, 1 / 1, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 5, 2 / 5, 3 / 5]
+    # However, meta_feature_values don't update unless the representation has seen window_size values
+    np.testing.assert_almost_equal(rep_5_vals, [0.0, 0.0, 0.0, 0.0, 0.0, 1 / 5, 1 / 5, 2 / 5, 3 / 5])
 
 
 def test_error_rate_representation_concept() -> None:
@@ -44,13 +48,14 @@ def test_error_rate_representation_concept() -> None:
     y_vals = [0, 0, 1, 0, 1, 1, 1, 0]
     p_vals = [1, 0, 1, 0, 1, 0, 0, 1]
     concept_id = 0
-    rep_1 = ErrorRateRepresentation(1, concept_id, mode="active")
+    normalizer = MetaFeatureNormalizer()
+    rep_1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="active")
     rep_1_vals = []
-    rep_5 = ErrorRateRepresentation(5, concept_id, mode="active")
+    rep_5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="active")
     rep_5_vals = []
-    rep_c1 = ErrorRateRepresentation(1, concept_id, mode="concept")
+    rep_c1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="concept")
     rep_c1_vals = []
-    rep_c5 = ErrorRateRepresentation(5, concept_id, mode="concept")
+    rep_c5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="concept")
     rep_c5_vals = []
     for t, (y, p) in enumerate(zip(y_vals, p_vals)):
         ob = Observation(x={}, y=y, seen_at=t, active_state_id=concept_id)
@@ -75,21 +80,35 @@ def test_error_rate_representation_concept() -> None:
     # The active mode representations return the error rate over the window_size
     # Note: the first value is not included, it is just the uninitialized value.
     assert rep_1_vals == [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
-    np.testing.assert_almost_equal(rep_5_vals, [0.0, 1 / 1, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 5, 2 / 5, 3 / 5])
+    # True Values: [0.0, 1 / 1, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 5, 2 / 5, 3 / 5]
+    # However, meta_feature_values don't update unless the representation has seen window_size values
+    np.testing.assert_almost_equal(rep_5_vals, [0.0, 0.0, 0.0, 0.0, 0.0, 1 / 5, 1 / 5, 2 / 5, 3 / 5])
     # The conept mode representations accumulate the error rate over the window_size
     np.testing.assert_almost_equal(rep_c1_vals, [0.0, 1 / 1, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 2 / 6, 3 / 7, 4 / 8])
+
+    # True values:         [
+    #     0.0,
+    #     1 / 1,
+    #     float(np.mean(rep_5_vals[1:3])),
+    #     float(np.mean(rep_5_vals[1:4])),
+    #     float(np.mean(rep_5_vals[1:5])),
+    #     float(np.mean(rep_5_vals[1:6])),
+    #     float(np.mean(rep_5_vals[1:7])),
+    #     float(np.mean(rep_5_vals[1:8])),
+    #     float(np.mean(rep_5_vals[1:9])),
+    # ],
     np.testing.assert_almost_equal(
         rep_c5_vals,
         [
             0.0,
-            1 / 1,
-            float(np.mean(rep_5_vals[1:3])),
-            float(np.mean(rep_5_vals[1:4])),
-            float(np.mean(rep_5_vals[1:5])),
-            float(np.mean(rep_5_vals[1:6])),
-            float(np.mean(rep_5_vals[1:7])),
-            float(np.mean(rep_5_vals[1:8])),
-            float(np.mean(rep_5_vals[1:9])),
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            float(np.mean(rep_5_vals[5:6])),
+            float(np.mean(rep_5_vals[5:7])),
+            float(np.mean(rep_5_vals[5:8])),
+            float(np.mean(rep_5_vals[5:9])),
         ],
     )
 
@@ -101,13 +120,14 @@ def test_error_rate_representation_update_period() -> None:
     p_vals = [1, 0, 1, 0, 1, 0, 0, 1]
     concept_id = 0
     update_period = 3
-    rep_1 = ErrorRateRepresentation(1, concept_id, mode="active", update_period=update_period)
+    normalizer = MetaFeatureNormalizer()
+    rep_1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="active", update_period=update_period)
     rep_1_vals = []
-    rep_5 = ErrorRateRepresentation(5, concept_id, mode="active", update_period=update_period)
+    rep_5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="active", update_period=update_period)
     rep_5_vals = []
-    rep_c1 = ErrorRateRepresentation(1, concept_id, mode="concept", update_period=update_period)
+    rep_c1 = ErrorRateRepresentation(1, concept_id, normalizer, mode="concept", update_period=update_period)
     rep_c1_vals = []
-    rep_c5 = ErrorRateRepresentation(5, concept_id, mode="concept", update_period=update_period)
+    rep_c5 = ErrorRateRepresentation(5, concept_id, normalizer, mode="concept", update_period=update_period)
     rep_c5_vals = []
     for t, (y, p) in enumerate(zip(y_vals, p_vals)):
         ob = Observation(x={}, y=y, seen_at=t, active_state_id=concept_id)
@@ -129,12 +149,17 @@ def test_error_rate_representation_update_period() -> None:
     print(rep_5_vals)
     print(rep_c1_vals)
     print(rep_c5_vals)
+    # errors = [1, 0, 0, 0, 0, 1, 1, 0]
     # The update period should only update meta_feature_values every update_period steps, otherwise they should
-    # be the same as the last.
-    # for update_period = 3
+    # be the same as the last. This only starts when the window is at window stize
+    # for update_period = 3 and window_size=1
     # [update, skip, skip, update, skip, skip, update, skip, skip,]
     assert rep_1_vals == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
-    np.testing.assert_almost_equal(rep_5_vals, [0.0, 0.0, 0.0, 1 / 3, 1 / 3, 1 / 3, 1 / 5, 1 / 5, 1 / 5])
+    # for update_period = 3 and window_size=5
+    # [-, -, -, -, -, update, skip, skip, update]
+    # True Values: [0.0, 1 / 1, 1 / 2, 1 / 3, 1 / 4, 1 / 5, 1 / 5, 2 / 5, 3 / 5]
+    # However, meta_feature_values don't update unless the representation has seen window_size values
+    np.testing.assert_almost_equal(rep_5_vals, [0.0, 0.0, 0.0, 0.0, 0.0, 1 / 5, 1 / 5, 1 / 5, 3 / 5])
     np.testing.assert_almost_equal(rep_c1_vals, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1 / 2, 1 / 2, 1 / 2])
     np.testing.assert_almost_equal(
         rep_c5_vals,
@@ -142,11 +167,11 @@ def test_error_rate_representation_update_period() -> None:
             0.0,
             0.0,
             0.0,
-            float(np.mean([rep_5_vals[3]])),
-            float(np.mean([rep_5_vals[3]])),
-            float(np.mean([rep_5_vals[3]])),
-            float(np.mean([rep_5_vals[3], rep_5_vals[6]])),
-            float(np.mean([rep_5_vals[3], rep_5_vals[6]])),
-            float(np.mean([rep_5_vals[3], rep_5_vals[6]])),
+            0.0,
+            0.0,
+            float(np.mean([rep_5_vals[5]])),
+            float(np.mean([rep_5_vals[5]])),
+            float(np.mean([rep_5_vals[5]])),
+            float(np.mean([rep_5_vals[5], rep_5_vals[8]])),
         ],
     )

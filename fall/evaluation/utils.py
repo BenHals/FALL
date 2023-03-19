@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -10,7 +12,7 @@ def get_index_colors() -> list[RGBAColor]:
     return plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 
-def convert_segment_to_timeseries(segments: list[DataStreamSegment]) -> np.ndarray:
+def convert_segment_to_timeseries(segments: Sequence[DataStreamSegment]) -> np.ndarray:
     segment_timeseries = [
         np.full(segment.segment_end - segment.segment_start + 1, segment.concept_idx) for segment in segments
     ]
