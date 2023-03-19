@@ -426,8 +426,6 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             return
 
         in_drift, in_warning, active_state_relevance = self.active_state_drift_detection()
-        if in_drift:
-            print("IN DRIFT ***************************************")
         observation.add_active_state_relevance(active_state_relevance, self.active_state_id)
         # if the observation is stable then we already trained on it, so we should add
         # relevance now.
@@ -468,7 +466,6 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         # Schedule any new re-identification checks.
         for drift in step_reidentification_checks:
             self.reidentification_schedule.schedule_reidentification(drift)
-        print(step_reidentification_checks)
         if len(step_reidentification_checks) > 0:
             # We always use the drift detector drift if availiable, or the newest scheduled drift if not.
             # This is based on the order, where scheduled drifts are expected to be ordered by time
@@ -476,7 +473,6 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
             drift = step_reidentification_checks[-1]
             self.performance_monitor.last_drift = drift
             state_relevance = self.perform_reidentification(drift)
-            print(state_relevance)
             drift.reidentification_relevance = state_relevance
             new_active_state = self.get_adapted_state(state_relevance, drift)
             if new_active_state != self.get_active_state():
