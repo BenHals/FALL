@@ -472,7 +472,6 @@ def test_reidentification_schedule_periodic() -> None:
             continue
         if drift.drift_type == DriftType.ScheduledOne:
             prev_drift = drift_checks[i - 1]
-            print(drift, prev_drift)
             assert prev_drift is not None
             if prev_drift.triggered_transition:
                 assert prev_drift.drift_timestep == drift.drift_timestep - check_period - 1
