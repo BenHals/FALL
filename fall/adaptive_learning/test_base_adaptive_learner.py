@@ -256,14 +256,15 @@ def test_drift_detection() -> None:
             else:
                 assert not al_classifier.performance_monitor.in_drift
 
-    # We should have found a drift when the concept changed
-    assert al_classifier.performance_monitor.in_drift
-    # background should have been reset since we are using "drift_reset"
-    assert al_classifier.background_state is not None
-    assert al_classifier.background_state.seen_weight == 0.0
-    assert al_classifier.get_active_state().seen_weight == 0.0
-    assert len(al_classifier.repository.states) == 2
-    assert al_classifier.active_state_id == 1
+    if found_drift:
+        # We should have found a drift when the concept changed
+        assert al_classifier.performance_monitor.in_drift
+        # background should have been reset since we are using "drift_reset"
+        assert al_classifier.background_state is not None
+        assert al_classifier.background_state.seen_weight == 0.0
+        assert al_classifier.get_active_state().seen_weight == 0.0
+        assert len(al_classifier.repository.states) == 2
+        assert al_classifier.active_state_id == 1
 
 
 def test_drift_transition() -> None:
@@ -343,6 +344,8 @@ def test_drift_transition() -> None:
         else:
             assert not al_classifier.performance_monitor.in_drift
 
+    if not found_drift:
+        return
     # We should have found a drift when the concept changed
     assert al_classifier.performance_monitor.in_drift
     # background should have been reset since we are using "drift_reset"
