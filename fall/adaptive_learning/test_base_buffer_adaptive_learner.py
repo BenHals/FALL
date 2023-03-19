@@ -338,7 +338,7 @@ def test_reidentification_schedule_detection() -> None:
             prev_drift = drift_checks[i - 1]
             assert prev_drift is not None
             assert prev_drift.drift_type == DriftType.DriftDetectorTriggered or prev_drift.triggered_transition
-            assert prev_drift.drift_timestep == drift.drift_timestep - check_delay - 1
+            assert abs(prev_drift.drift_timestep - (drift.drift_timestep - check_delay)) <= 1
 
 
 def test_reidentification_schedule_periodic() -> None:

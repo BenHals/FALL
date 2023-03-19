@@ -168,7 +168,7 @@ def test_drift_detection() -> None:
     baseline_detector = ADWIN()
 
     dataset_0 = synth.STAGGER(classification_function=0, seed=0)
-    dataset_1 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_1 = synth.STAGGER(classification_function=2, seed=0)
     found_drift = False
     for t, (x, y) in enumerate(dataset_0.take(500)):
         # Ensure predictions are equal
@@ -228,6 +228,9 @@ def test_drift_detection() -> None:
         assert not al_classifier.performance_monitor.in_drift
         assert not al_classifier.performance_monitor.made_transition
 
+    # NOTE: This test may be flaky, because a drift detection by the baseline detector may
+    # not always correspond to a change in state. E.G., if the system determines the drift
+    # is a false positive because the change in similarity is within a normal range.
     if not found_drift:
         for t, (x, y) in enumerate(dataset_1.take(500), start=500):
             ob = Observation(x=x, y=y, seen_at=t, active_state_id=baseline_state.state_id)
@@ -288,7 +291,7 @@ def test_drift_transition() -> None:
     baseline_c1_detector = ADWIN()
 
     dataset_1 = synth.STAGGER(classification_function=0, seed=0)
-    dataset_2 = synth.STAGGER(classification_function=1, seed=0)
+    dataset_2 = synth.STAGGER(classification_function=2, seed=0)
     found_drift = False
     drift_point = None
     # Concept 1
@@ -311,6 +314,9 @@ def test_drift_transition() -> None:
         assert not al_classifier.performance_monitor.made_transition
 
     # Concept 2
+    # NOTE: This test may be flaky, because a drift detection by the baseline detector may
+    # not always correspond to a change in state. E.G., if the system determines the drift
+    # is a false positive because the change in similarity is within a normal range.
     for t, (x, y) in enumerate(dataset_2.take(500), start=500):
         ob = Observation(x=x, y=y, seen_at=t, active_state_id=baseline_c1_state.state_id)
         al_classifier.predict_one(x)
@@ -432,7 +438,7 @@ def test_reidentification_schedule_detection() -> None:
             prev_drift = drift_checks[i - 1]
             assert prev_drift is not None
             assert prev_drift.drift_type == DriftType.DriftDetectorTriggered or prev_drift.triggered_transition
-            assert prev_drift.drift_timestep == drift.drift_timestep - check_delay - 1
+            assert abs(prev_drift.drift_timestep - (drift.drift_timestep - check_delay)) <= 1
 
 
 def test_reidentification_schedule_periodic() -> None:

@@ -65,8 +65,8 @@ def test_discrete_states() -> None:
             # The classifier should only have one state at a time, the active one
             assert len(discrete_classifier.repository.states) == 1
 
-            # We should observe a unique active_state_id for each concept drift detected
-            if discrete_classifier.performance_monitor.in_drift:
+            # We should observe a unique active_state_id for each concept drift detected and transitioned
+            if discrete_classifier.performance_monitor.made_transition:
                 detected_segments += 1
             assert len(states) == detected_segments
 
@@ -133,7 +133,7 @@ def test_buffered_discrete_states() -> None:
             # The classifier should only have one state at a time, the active one
             assert len(discrete_classifier.repository.states) == 1
 
-            # We should observe a unique active_state_id for each concept drift detected
-            if discrete_classifier.performance_monitor.in_drift:
+            # We should observe a unique active_state_id for each concept drift detected and transitioned
+            if discrete_classifier.performance_monitor.made_transition:
                 detected_segments += 1
             assert len(states) == detected_segments
