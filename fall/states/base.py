@@ -48,7 +48,7 @@ class State:  # pylint: disable=too-few-public-methods
         representation_constructor: Callable[[int], ConceptRepresentation],
         state_id: int = -1,
         train_representation: bool = True,
-        in_concept_relevance_memory_size: int = 25,
+        in_concept_relevance_memory_size: int = 10,
     ) -> None:
         self.state_id = state_id
         self.name = str(self.state_id)

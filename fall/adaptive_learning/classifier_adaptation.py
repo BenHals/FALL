@@ -47,14 +47,11 @@ def max_acc_sig_relevance_adaptation(
             state = repository.states[state_id]
         state_stdev = state.in_concept_relevance_distribution.stdev
         state_mean = state.in_concept_relevance_distribution.mean
-        print(state_id, relevance, state_mean, state_stdev, max_relevance)
         if (
             relevance >= max_relevance - (max_stdev * threshold_stdev)
             or max_relevance <= relevance + (state_stdev * threshold_stdev)
         ) and relevance > state_mean - (state_stdev * threshold_stdev):
             accepted_states.append(state)
-
-    print(accepted_states)
 
     if len(accepted_states) == 0:
         adapted_state = None

@@ -562,10 +562,8 @@ class BaseAdaptiveLearner(Classifier, abc.ABC):
         state_relevance = self.representation_comparer.get_state_rep_similarity(state, state_representation)
 
         _ = drift_detector.update(state_relevance)  # type: ignore
-        print(drift_detector.estimation, drift_detector.variance)
 
         in_drift = drift_detector.drift_detected
-        print(in_drift)
         in_warning = False
         # turn off detections which do not match mode
         if in_drift:
