@@ -1,6 +1,6 @@
 """ A simple discrete segment adaptive learning system. """
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 from river.base import Classifier, DriftDetector
 
@@ -32,6 +32,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
         train_representation: bool = True,
         representation_window_size: int = 1,
         drift_detection_mode: str = "lower",
+        background_state_mode: Union[str, int, None] = "drift_reset",
     ) -> None:
         """
         Parameters
@@ -81,7 +82,7 @@ class DiscreteSegmentAL(BaseAdaptiveLearner):
             representation_window_size=representation_window_size,
             construct_pair_representations=False,
             prediction_mode="active",
-            background_state_mode=None,
+            background_state_mode=background_state_mode,
             drift_detection_mode=drift_detection_mode,
         )
 
